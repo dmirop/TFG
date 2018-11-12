@@ -147,20 +147,22 @@ def get_PST(assign, distances):
     INF = 99999
 
     if len(assign) != 0:
-        included_nodes = []
+        included_nodes = {}
         priority_queue = []
-        heapq.heappush(priority_queue,(0,0))
+        heapq.heappush(priority_queue,(0,0,0))
         while len(included_nodes) != len(assign):
             minimum_node = heapq.heappop(priority_queue)
-            for node in range(len(assign)):
-                if node not in included_nodes:
-                    heapq.heappush(priority_queue, (distances[minimum_node[1]][assign[node]], node))
-            included_nodes.append(minimum_node)
-
-
-
-
-
+            distance = minimum_node[0]
+            visiting_node = minimum_node[1]
+            parent = minimum_node[2]
+            included_nodes[visiting_node] = (distance, parent)
+            for vertex in range(len(assign)):
+                if vertex not in [*included_nodes]:
+                    heapq.heappush(priority_queue, (distances[assign[vertex]][assign[visiting_node]],vertex,visiting_node))
+        distance = 0
+        for values in included_nodes.values():
+            distance += values[0]
+        return distance
     else:
         return INF
 
@@ -188,18 +190,28 @@ def main():
     pop_size = 20
     crossover_prob = 0.5
     mutation_prob = 0.2
-    max_generations = 100
-    gen_no_change = 10
+    max_generations = 1000
+    gen_no_change = 50
 
     pool = initialize(pop_size, len(patients))
     evaluations = evaluate(pool, distances, patients);
+    generation_number = 0
+    generations_no_changes = 0
+    min_evaluation = min(evaluations)
 
-    while not terminate():
+    while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         select_and_reproduce()
         crossover()
         mutation()
-        evaluate(pool, distances, patients);
-        exit(0)
+        pool = initialize(pop_size, len(patients))
+        evaluations = evaluate(pool, distances, patients);
+        if min_evaluation < min(evaluations):
+            generations_no_changes += 1
+        else:
+            print("Better chromosome found with value {0} at generation {1}".format(min(evaluations), generation_number))
+            min_evaluation = min(evaluations)
+            generations_no_changes = 0
+        generation_number += 1
 
 
 if __name__ == "__main__":
