@@ -175,11 +175,19 @@ def select_and_reproduce():
 def crossover():
     pass
 
-def mutation():
-    pass
+def mutation(chromosome):
+    gene_index = []
+    while len(gene_index) != 2:
+        index = random.randrange(len(chromosome))
+        if index not in gene_index:
+            gene_index.append(index)
 
+    mutated_gene_A = chromosome[gene_index[0]]
+    mutated_gene_B = chromosome[gene_index[1]]
 
-
+    chromosome[gene_index[0]]=mutated_gene_B
+    chromosome[gene_index[1]]=mutated_gene_A
+    return chromosome
 
 def main():
     if check_arguments():
@@ -187,7 +195,7 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
 
-    pop_size = 20
+    pop_size = 50
     crossover_prob = 0.5
     mutation_prob = 0.2
     max_generations = 1000
@@ -202,13 +210,13 @@ def main():
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         select_and_reproduce()
         crossover()
-        mutation()
+        mutation(pool[0])
         pool = initialize(pop_size, len(patients))
         evaluations = evaluate(pool, distances, patients);
         if min_evaluation < min(evaluations):
             generations_no_changes += 1
         else:
-            print("Better chromosome found with value {0} at generation {1}".format(min(evaluations), generation_number))
+            print("Better chromosome found with value {0} at generation {1} after {2} generations without change".format(min(evaluations), generation_number, generations_no_changes))
             min_evaluation = min(evaluations)
             generations_no_changes = 0
         generation_number += 1
