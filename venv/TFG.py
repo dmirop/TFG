@@ -254,7 +254,6 @@ def simple_crossover(chromosome_a, chromosome_b):
 
     start_parent_a = parent_a[:crossover_point]
     end_parent_a = parent_a[crossover_point:]
-    start_parent_b = parent_b[:crossover_point]
     end_parent_b = parent_b[crossover_point:]
 
     crossover_chromosome = [*start_parent_a]
@@ -264,6 +263,37 @@ def simple_crossover(chromosome_a, chromosome_b):
             crossover_chromosome.append(end_parent_b[index])
         else:
             crossover_chromosome.append(end_parent_a[index])
+
+    return complexify_chromosome(crossover_chromosome, nurse_index_a)
+
+def double_crossover(chromosome_a, chromosome_b):
+    nurse_index_a = get_nurse_index(chromosome_a)
+    nurse_index_b = get_nurse_index(chromosome_b)
+    parent_a = simplify_chromosome(chromosome_a, nurse_index_a)
+    parent_b = simplify_chromosome(chromosome_b, nurse_index_b)
+
+    crossover_points = []
+    while len(crossover_points) != 2:
+        crossover_point = random.randrange(len(parent_a))
+        if crossover_points not in crossover_points:
+            crossover_points.append(crossover_point)
+
+    crossover_points = sorted(crossover_points)
+
+    start_parent_a = parent_a[:crossover_points[0]]
+    middle_parent_a = parent_a[crossover_points[0]:crossover_points[1]]
+    end_parent_a = parent_a[crossover_points[1]:]
+    middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
+
+    crossover_chromosome = [*start_parent_a]
+
+    for index in range(len(middle_parent_b)):
+        if middle_parent_b[index] not in start_parent_a and middle_parent_b[index] not in end_parent_a:
+            crossover_chromosome.append(middle_parent_b[index])
+        else:
+            crossover_chromosome.append(middle_parent_a[index])
+
+    crossover_chromosome = [*crossover_chromosome, *end_parent_a]
 
     return complexify_chromosome(crossover_chromosome, nurse_index_a)
 
