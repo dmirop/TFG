@@ -5,9 +5,6 @@ import random
 from math import sqrt
 import heapq
 
-SIMPLE = 0
-DOUBLE = 1
-
 def check_arguments():
     """Asserts the right number of arguments
 
@@ -175,18 +172,97 @@ def terminate():
 def select_and_reproduce():
     pass
 
-def crossover(chromosome_a, chromosome_b, type):
+def crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
     nurse_index_b = get_nurse_index(chromosome_b)
-    if type == SIMPLE:
-        pass
-    elif type == DOUBLE:
-        pass
-    return chromosome_a, chromosome_b
+
+    simple_chromosome_a = simplify_chromosome(chromosome_a, nurse_index_a)
+    simple_chromosome_b = simplify_chromosome(chromosome_b, nurse_index_b)
+
+    keep_assign = random.randrange(len(nurse_index_a)+1)
+
+    if keep_assign == 0:
+        index_range = [0, nurse_index_a[keep_assign]]
+    elif keep_assign == len(nurse_index_a):
+        index_range = [nurse_index_a[keep_assign-1]+1, len(chromosome_a)]
+    else:
+        index_range = [nurse_index_a[keep_assign-1]+1, nurse_index_a[keep_assign]]
+
+    print(chromosome_a)
+    print(nurse_index_a)
+    print(keep_assign)
+    print(index_range)
+    print(chromosome_a[index_range[0]:index_range[1]])
+
+    nurse_assigns = []
+
+    from_index = 0
+
+    for index in nurse_index:
+        nurse_assigns.append([*chromosome_a[from_index:index]])
+        from_index = index+1
+
+    nurse_assigns.append([*chromosome_a[from_index:]])
+
+    crossover_chromosome = []
+
+
+
+    print(chromosome_a)
+    print(chromosome_b)
+    print(keep_assign)
+    print(crossover_chromosome)
+
+
+
+    simple_chromosome_a = simplify_chromosome(chromosome_a, nurse_index_a)
+    simple_chromosome_b = simplify_chromosome(chromosome_b, nurse_index_b)
+
+    crossover_point = random.randrange(len(simple_chromosome_a))
+    start_chromosome_a = [*simple_chromosome_a[:crossover_point]]
+    end_chromosome_a = [*simple_chromosome_a[crossover_point:]]
+    start_chromosome_b = [*simple_chromosome_b[:crossover_point]]
+    end_chromosome_b = [*simple_chromosome_b[crossover_point:]]
+
+    crossover_chromosome_a = [*start_chromosome_a]
+    for gene in end_chromosome_b:
+        if gene not in start_chromosome_a:
+            crossover_chromosome_a.append(gene)
+    for gene in end_chromosome_a:
+        if gene not in crossover_chromosome_a:
+            crossover_chromosome_a.append(gene)
+
+    crossover_chromosome_a = complexify_chromosome(crossover_chromosome_a, nurse_index_a)
+
+    crossover_chromosome_b = []
+    for gene in start_chromosome_b:
+        if gene not in end_chromosome_a:
+            crossover_chromosome_b.append(gene)
+    for gene in start_chromosome_a:
+        if gene not in crossover_chromosome_b:
+            crossover_chromosome_b.append(gene)
+    crossover_chromosome_b = [*crossover_chromosome_b, *end_chromosome_a]
+
+    crossover_chromosome_b = complexify_chromosome(crossover_chromosome_b, nurse_index_a)
+
+    return crossover_chromosome_a, crossover_chromosome_b
 
 def get_nurse_index(chromosome):
     return [i for i, x in enumerate(chromosome) if x == "N"]
 
+def simplify_chromosome(full_chromosome, nurse_index):
+    simple_chromosome = []
+    from_index = 0
+    for index in nurse_index:
+        simple_chromosome = [*simple_chromosome, *full_chromosome[from_index:index]]
+        from_index = index+1
+    return [*simple_chromosome, *full_chromosome[from_index:]]
+
+def complexify_chromosome(simple_chromosome, nurse_index):
+    complex_chromosome = simple_chromosome.copy()
+    for index in nurse_index:
+        complex_chromosome.insert(index, "N")
+    return complex_chromosome
 
 def mutation(chromosome):
     gene_index = []
@@ -209,21 +285,22 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
 
-    pop_size = 50
+    pop_size = 100
     crossover_prob = 0.5
     mutation_prob = 0.2
-    max_generations = 1000
-    gen_no_change = 50
+    max_generations = 10000
+    gen_no_change = 250
 
     pool = initialize(pop_size, len(patients))
     evaluations = evaluate(pool, distances, patients);
     generation_number = 0
     generations_no_changes = 0
     min_evaluation = min(evaluations)
+    crossover(pool[0], pool[1])
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         select_and_reproduce()
-        crossover(pool[0], pool[1], SIMPLE)
+        #crossover(pool[0], pool[1])
         mutation(pool[0])
         pool = initialize(pop_size, len(patients))
         evaluations = evaluate(pool, distances, patients);
