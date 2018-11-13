@@ -108,9 +108,8 @@ def evaluate(pool_list, distance_matrix, patient_list):
     for chromosome in pool_list:
         nurse_assignments = retrieve_assignments(chromosome)
         stdv = calculate_stdv(nurse_assignments, patient_list)
-        #distance = calculate_distances(nurse_assignments, distance_matrix)
-        distance = 0
-        evaluations.append(stdv + 2*distance)
+        distance = calculate_distances(nurse_assignments, distance_matrix)
+        evaluations.append(stdv + distance)
     return evaluations
 
 
@@ -182,8 +181,7 @@ def get_PST(assign, distances):
 
 
 def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
-
-    enter_p = [sum(evaluations)-eval for eval in evaluations]
+    enter_p = [(max(evaluations)+min(evaluations))-eval for eval in evaluations]
     enter_p = [round(eval/sum(enter_p),4) for eval in enter_p]
     enter_p = list(accumulate(enter_p))
     enter_p[-1] = 1
@@ -194,7 +192,7 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
 
     new_pool = []
 
-    for i in range(len(pool)):
+    for i in range(len(pool)-1):
         rndm = random.random()
         for j in range(len(enter_p)):
             if rndm <= enter_p[j]:
@@ -210,6 +208,8 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
                 elif j == 1:
                     new_pool[i] = crossover(new_pool[i], best_chromosome)
                 break
+
+    new_pool.append(best_chromosome)
 
     return new_pool
 
