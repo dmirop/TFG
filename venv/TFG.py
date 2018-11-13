@@ -273,11 +273,11 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
     num_nurses = 4
-    pop_size = 50
+    pop_size = 300
     crossover_prob = 0.3
     mutation_prob = 0.6
     max_generations = 50000
-    gen_no_change = max_generations/10
+    gen_no_change = max_generations/100
 
     weight_stdv = 1
     weight_distance = 1
