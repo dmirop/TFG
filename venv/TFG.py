@@ -108,7 +108,8 @@ def evaluate(pool_list, distance_matrix, patient_list):
     for chromosome in pool_list:
         nurse_assignments = retrieve_assignments(chromosome)
         stdv = calculate_stdv(nurse_assignments, patient_list)
-        distance = calculate_distances(nurse_assignments, distance_matrix)
+        #distance = calculate_distances(nurse_assignments, distance_matrix)
+        distance = 0
         evaluations.append(stdv + 2*distance)
     return evaluations
 
@@ -269,10 +270,10 @@ def main():
         patients = retrieve_patients()
 
     pop_size = 100
-    crossover_prob = 0.3
-    mutation_prob = 0.6
+    crossover_prob = 0.2
+    mutation_prob = 0.2
     max_generations = 10000
-    gen_no_change = 100
+    gen_no_change = 250
 
     pool = initialize(pop_size, len(patients))
     evaluations = evaluate(pool, distances, patients);
@@ -284,22 +285,22 @@ def main():
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
         evaluations = evaluate(pool, distances, patients);
-        if min_evaluation < min(evaluations):
+        if min_evaluation <= min(evaluations):
             generations_no_changes += 1
         else:
+            min_evaluation = min(evaluations)
+            best_chromosome = pool[evaluations.index(min_evaluation)].copy()
             nurse_assignments = retrieve_assignments(best_chromosome)
             distance = calculate_distances(nurse_assignments, distances)
             stdv = calculate_stdv(nurse_assignments, patients)
             print(
-                "Better chromosome found at generation {0} after {1} generations without change with stdv {2} and distance {3}".format(
-                    generation_number, generations_no_changes, stdv, distance))
-            min_evaluation = min(evaluations)
-            best_chromosome = pool[evaluations.index(min_evaluation)].copy()
+                "Better chromosome found at generation {0} with stdv {1} and distance {2}".format(
+                    generation_number, stdv, distance))
             generations_no_changes = 0
         generation_number += 1
 
-        if generation_number%25 == 0:
-            print("Generation {0}: {1} mean score".format(generation_number, sum(evaluations)/len(evaluations)))
+        if generation_number%10 == 0:
+            print("Generation {0}: {1} min score".format(generation_number, min(evaluations)))
 
     print("The best chromosome is {0} with score {1}".format(best_chromosome, min_evaluation))
 
