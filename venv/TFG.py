@@ -103,13 +103,13 @@ def initialize(population_size, num_patients, nurses):
     return pool
 
 
-def evaluate(pool_list, distance_matrix, patient_list):
+def evaluate(pool_list, distance_matrix, patient_list, coeficient_stdv, coeficient_distance):
     evaluations = []
     for chromosome in pool_list:
         nurse_assignments = retrieve_assignments(chromosome)
         stdv = calculate_stdv(nurse_assignments, patient_list)
         distance = calculate_distances(nurse_assignments, distance_matrix)
-        evaluations.append(0.25 * stdv + 1 * distance)
+        evaluations.append((coeficient_stdv * stdv) + (coeficient_distance * distance))
     return evaluations
 
 
@@ -276,10 +276,14 @@ def main():
     crossover_prob = 0.2
     mutation_prob = 0.6
     max_generations = 1000
-    gen_no_change = 250
+    gen_no_change = 100
+
+    weight_stdv = 1
+    weight_distance = 1
+
 
     pool = initialize(pop_size, len(patients), num_nurses)
-    evaluations = evaluate(pool, distances, patients)
+    evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
     generation_number = 0
     generations_no_changes = 0
     min_evaluation = min(evaluations)
@@ -287,7 +291,7 @@ def main():
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
-        evaluations = evaluate(pool, distances, patients);
+        evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
         if min_evaluation <= min(evaluations):
             generations_no_changes += 1
         else:
