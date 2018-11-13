@@ -324,9 +324,6 @@ def main():
     generations_no_changes = 0
     min_evaluation = min(evaluations)
     best_chromosome = pool[evaluations.index(min_evaluation)].copy()
-    print(best_chromosome)
-    print(pool[-1])
-    print(simple_crossover(best_chromosome,pool[-1]))
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
