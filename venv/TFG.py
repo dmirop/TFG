@@ -157,6 +157,7 @@ def get_PST(assign, distances):
     :return: the path value of the assignment
     """
     INF = 99999
+    INF = 0
 
     if len(assign) != 0:
         included_nodes = {}
@@ -272,11 +273,11 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
     num_nurses = 4
-    pop_size = 100
-    crossover_prob = 0.2
+    pop_size = 50
+    crossover_prob = 0.3
     mutation_prob = 0.6
-    max_generations = 1000
-    gen_no_change = 100
+    max_generations = 50000
+    gen_no_change = max_generations/10
 
     weight_stdv = 1
     weight_distance = 1
@@ -306,8 +307,8 @@ def main():
             generations_no_changes = 0
         generation_number += 1
 
-        if generation_number%10 == 0:
-            print("Generation {0}: {1} min score".format(generation_number, min(evaluations)))
+        if generation_number%100 == 0:
+            print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score".format(generation_number, min(evaluations), max(evaluations), sum(evaluations), sum(evaluations)/len(evaluations), sorted(evaluations)[round(len(evaluations)/2)]))
 
     print("The best chromosome is {0} with score {1}".format(best_chromosome, min_evaluation))
 
