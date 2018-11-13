@@ -85,20 +85,20 @@ def retrieve_patients():
         f.close()
 
 
-def initialize(popSize, num_patients):
+def initialize(population_size, num_patients, nurses):
     """
     Creates de first generation of chromosomes
-    :param popSize: size of the population
+    :param population_size: size of the population
     :param num_patients: number of patients
     :return: a pool for the first generation
     """
     base_population = [i for i in range(num_patients)]
 
-    for nurse in range(2):
+    for nurse in range(nurses-1):
         base_population.append("N")
 
     pool = []
-    for population in range(popSize):
+    for population in range(population_size):
         pool.append(random.sample(base_population, len(base_population)))
     return pool
 
@@ -109,7 +109,7 @@ def evaluate(pool_list, distance_matrix, patient_list):
         nurse_assignments = retrieve_assignments(chromosome)
         stdv = calculate_stdv(nurse_assignments, patient_list)
         distance = calculate_distances(nurse_assignments, distance_matrix)
-        evaluations.append(stdv + distance)
+        evaluations.append(0.25 * stdv + 1 * distance)
     return evaluations
 
 
@@ -167,11 +167,12 @@ def get_PST(assign, distances):
             distance = minimum_node[0]
             visiting_node = minimum_node[1]
             parent = minimum_node[2]
-            included_nodes[visiting_node] = (distance, parent)
-            for vertex in range(len(assign)):
-                if vertex not in [*included_nodes]:
-                    heapq.heappush(priority_queue,
-                                   (distances[assign[vertex]][assign[visiting_node]], vertex, visiting_node))
+            if visiting_node not in [*included_nodes]:
+                included_nodes[visiting_node] = (distance, parent)
+                for vertex in range(len(assign)):
+                    if vertex not in [*included_nodes]:
+                        heapq.heappush(priority_queue,
+                                       (distances[assign[vertex]][assign[visiting_node]], vertex, visiting_node))
         distance = 0
         for values in included_nodes.values():
             distance += values[0]
@@ -257,10 +258,12 @@ def mutation(chromosome):
     mutated_gene_A = chromosome[gene_index[0]]
     mutated_gene_B = chromosome[gene_index[1]]
 
-    chromosome[gene_index[0]] = mutated_gene_B
-    chromosome[gene_index[1]] = mutated_gene_A
+    mutated_chromosome = chromosome.copy()
 
-    return chromosome
+    mutated_chromosome[gene_index[0]] = mutated_gene_B
+    mutated_chromosome[gene_index[1]] = mutated_gene_A
+
+    return mutated_chromosome
 
 
 def main():
@@ -268,15 +271,15 @@ def main():
         rooms = retrieve_rooms()
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
-
+    num_nurses = 4
     pop_size = 100
     crossover_prob = 0.2
-    mutation_prob = 0.2
-    max_generations = 10000
+    mutation_prob = 0.6
+    max_generations = 1000
     gen_no_change = 250
 
-    pool = initialize(pop_size, len(patients))
-    evaluations = evaluate(pool, distances, patients);
+    pool = initialize(pop_size, len(patients), num_nurses)
+    evaluations = evaluate(pool, distances, patients)
     generation_number = 0
     generations_no_changes = 0
     min_evaluation = min(evaluations)
@@ -303,7 +306,6 @@ def main():
             print("Generation {0}: {1} min score".format(generation_number, min(evaluations)))
 
     print("The best chromosome is {0} with score {1}".format(best_chromosome, min_evaluation))
-
 
 if __name__ == "__main__":
     main()
