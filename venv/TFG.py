@@ -244,10 +244,45 @@ def crossover(chromosome_a, chromosome_b):
                             crossover_chromosome.insert(i, candidate_gene)
     return crossover_chromosome
 
+def simple_crossover(chromosome_a, chromosome_b):
+    nurse_index_a = get_nurse_index(chromosome_a)
+    nurse_index_b = get_nurse_index(chromosome_b)
+    parent_a = simplify_chromosome(chromosome_a, nurse_index_a)
+    parent_b = simplify_chromosome(chromosome_b, nurse_index_b)
+
+    crossover_point = random.randrange(len(parent_a))
+
+    start_parent_a = parent_a[:crossover_point]
+    end_parent_a = parent_a[crossover_point:]
+    start_parent_b = parent_b[:crossover_point]
+    end_parent_b = parent_b[crossover_point:]
+
+    crossover_chromosome = [*start_parent_a]
+
+    for index in range(len(end_parent_b)):
+        if end_parent_b[index] not in crossover_chromosome:
+            crossover_chromosome.append(end_parent_b[index])
+        else:
+            crossover_chromosome.append(end_parent_a[index])
+
+    return complexify_chromosome(crossover_chromosome, nurse_index_a)
 
 def get_nurse_index(chromosome):
     return [i for i, x in enumerate(chromosome) if x == "N"]
 
+def simplify_chromosome(full_chromosome, nurse_index):
+    simple_chromosome = []
+    from_index = 0
+    for index in nurse_index:
+        simple_chromosome = [*simple_chromosome, *full_chromosome[from_index:index]]
+        from_index = index+1
+    return [*simple_chromosome, *full_chromosome[from_index:]]
+
+def complexify_chromosome(simple_chromosome, nurse_index):
+    complex_chromosome = simple_chromosome.copy()
+    for index in nurse_index:
+        complex_chromosome.insert(index, "N")
+    return complex_chromosome
 
 def mutation(chromosome):
     gene_index = []
@@ -289,6 +324,9 @@ def main():
     generations_no_changes = 0
     min_evaluation = min(evaluations)
     best_chromosome = pool[evaluations.index(min_evaluation)].copy()
+    print(best_chromosome)
+    print(pool[-1])
+    print(simple_crossover(best_chromosome,pool[-1]))
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
