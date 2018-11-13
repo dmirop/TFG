@@ -4,6 +4,8 @@ import sys
 import random
 from math import sqrt
 import heapq
+from itertools import accumulate
+
 
 def check_arguments():
     """Asserts the right number of arguments
@@ -14,13 +16,14 @@ def check_arguments():
         assert 1 < len(sys.argv) < 4
         if len(sys.argv) == 2:
             assert sys.argv[1] == "--help"
-            print ("Usage: TFG ROOMS PATIENTS")
-            print ("Executes a genetic algorithm taking into account the ROOMS and PATIENTS")
+            print("Usage: TFG ROOMS PATIENTS")
+            print("Executes a genetic algorithm taking into account the ROOMS and PATIENTS")
             exit(0)
         return True
     except AssertionError:
         print("error: the number of arguments is not correct \n")
         print("Try 'TFG --help' for more information")
+
 
 def retrieve_rooms():
     """Tries to retrieve the rooms from file
@@ -36,9 +39,10 @@ def retrieve_rooms():
         rooms = []
         for t in f.read().split():
             a, b = t.strip('()').split(',')
-            rooms.append((int(a),int(b)))
+            rooms.append((int(a), int(b)))
         return rooms
         f.close()
+
 
 def calculate_room_distances(rooms):
     """Computes the distance between rooms
@@ -55,6 +59,7 @@ def calculate_room_distances(rooms):
 
     return distances_list
 
+
 def manhattan_distance(A, B):
     """Gives the Manhattan distance of two coordinates
 
@@ -62,7 +67,8 @@ def manhattan_distance(A, B):
     :param B: coordinates of point B
     :return: the Manhattan distance
     """
-    return abs(A[0]-B[0]) + abs(A[1]-B[1])
+    return abs(A[0] - B[0]) + abs(A[1] - B[1])
+
 
 def retrieve_patients():
     """Tries to retrieve the patients from a file
@@ -77,6 +83,7 @@ def retrieve_patients():
     else:
         return f.read().splitlines()
         f.close()
+
 
 def initialize(popSize, num_patients):
     """
@@ -95,14 +102,16 @@ def initialize(popSize, num_patients):
         pool.append(random.sample(base_population, len(base_population)))
     return pool
 
+
 def evaluate(pool_list, distance_matrix, patient_list):
     evaluations = []
     for chromosome in pool_list:
         nurse_assignments = retrieve_assignments(chromosome)
         stdv = calculate_stdv(nurse_assignments, patient_list)
         distance = calculate_distances(nurse_assignments, distance_matrix)
-        evaluations.append(stdv*distance)
+        evaluations.append(stdv + 2*distance)
     return evaluations
+
 
 def retrieve_assignments(chromosome):
     assigns = []
@@ -117,6 +126,7 @@ def retrieve_assignments(chromosome):
 
     return assigns
 
+
 def calculate_stdv(assignments, patient_list):
     n = len(assignments)
     loads = []
@@ -126,16 +136,18 @@ def calculate_stdv(assignments, patient_list):
             for patient in assign:
                 load += int(patient_list[patient])
         loads.append(load)
-    mean = sum(loads)/n
+    mean = sum(loads) / n
     sq_differences = [(x - mean) ** 2 for x in loads]
     variance = sum(sq_differences) / n
     return sqrt(variance)
+
 
 def calculate_distances(assignments, distances):
     nurse_distances = []
     for assign in assignments:
         nurse_distances.append(get_PST(assign, distances))
     return sum(nurse_distances)
+
 
 def get_PST(assign, distances):
     """
@@ -149,7 +161,7 @@ def get_PST(assign, distances):
     if len(assign) != 0:
         included_nodes = {}
         priority_queue = []
-        heapq.heappush(priority_queue,(0,0,0))
+        heapq.heappush(priority_queue, (0, 0, 0))
         while len(included_nodes) != len(assign):
             minimum_node = heapq.heappop(priority_queue)
             distance = minimum_node[0]
@@ -158,7 +170,8 @@ def get_PST(assign, distances):
             included_nodes[visiting_node] = (distance, parent)
             for vertex in range(len(assign)):
                 if vertex not in [*included_nodes]:
-                    heapq.heappush(priority_queue, (distances[assign[vertex]][assign[visiting_node]],vertex,visiting_node))
+                    heapq.heappush(priority_queue,
+                                   (distances[assign[vertex]][assign[visiting_node]], vertex, visiting_node))
         distance = 0
         for values in included_nodes.values():
             distance += values[0]
@@ -166,103 +179,72 @@ def get_PST(assign, distances):
     else:
         return INF
 
-def terminate():
-    pass
 
-def select_and_reproduce():
-    pass
+def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
+
+    enter_p = [sum(evaluations)-eval for eval in evaluations]
+    enter_p = [round(eval/sum(enter_p),4) for eval in enter_p]
+    enter_p = list(accumulate(enter_p))
+    enter_p[-1] = 1
+
+    best_chromosome = pool[evaluations.index(min(evaluations))]
+
+    change_p = [mutation_rate, mutation_rate+crossover_rate,1]
+
+    new_pool = []
+
+    for i in range(len(pool)):
+        rndm = random.random()
+        for j in range(len(enter_p)):
+            if rndm <= enter_p[j]:
+                new_pool.insert(i, pool[j])
+                break
+
+    for i in range(len(new_pool)):
+        rndm = random.random()
+        for j in range(len(change_p)):
+            if rndm <= change_p[j]:
+                if j == 0:
+                    new_pool[i] = mutation(new_pool[i])
+                elif j == 1:
+                    new_pool[i] = crossover(new_pool[i], best_chromosome)
+                break
+
+    return new_pool
 
 def crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
-    nurse_index_b = get_nurse_index(chromosome_b)
 
-    simple_chromosome_a = simplify_chromosome(chromosome_a, nurse_index_a)
-    simple_chromosome_b = simplify_chromosome(chromosome_b, nurse_index_b)
+    kept_assign = random.randrange(len(nurse_index_a) + 1)
 
-    keep_assign = random.randrange(len(nurse_index_a)+1)
-
-    if keep_assign == 0:
-        index_range = [0, nurse_index_a[keep_assign]]
-    elif keep_assign == len(nurse_index_a):
-        index_range = [nurse_index_a[keep_assign-1]+1, len(chromosome_a)]
+    if kept_assign == 0:
+        protected_range = [0, nurse_index_a[kept_assign] - 1]
+    elif kept_assign == len(nurse_index_a):
+        protected_range = [nurse_index_a[kept_assign - 1] + 1, len(chromosome_a) - 1]
     else:
-        index_range = [nurse_index_a[keep_assign-1]+1, nurse_index_a[keep_assign]]
-
-    print(chromosome_a)
-    print(nurse_index_a)
-    print(keep_assign)
-    print(index_range)
-    print(chromosome_a[index_range[0]:index_range[1]])
-
-    nurse_assigns = []
-
-    from_index = 0
-
-    for index in nurse_index:
-        nurse_assigns.append([*chromosome_a[from_index:index]])
-        from_index = index+1
-
-    nurse_assigns.append([*chromosome_a[from_index:]])
+        protected_range = [nurse_index_a[kept_assign - 1] + 1, nurse_index_a[kept_assign] - 1]
 
     crossover_chromosome = []
+    copy_chromosome_b = chromosome_b.copy()
 
+    for i in range(len(chromosome_a)):
+        if chromosome_a[i] == "N":
+            crossover_chromosome.insert(i, "N")
+        elif protected_range[0] <= i <= protected_range[1]:
+            crossover_chromosome.insert(i, chromosome_a[i])
+        else:
+            while len(crossover_chromosome) != i + 1:
+                candidate_gene = copy_chromosome_b.pop(0)
+                if candidate_gene != "N":
+                    if candidate_gene not in crossover_chromosome:
+                        if candidate_gene not in chromosome_a[protected_range[0]:protected_range[1] + 1]:
+                            crossover_chromosome.insert(i, candidate_gene)
+    return crossover_chromosome
 
-
-    print(chromosome_a)
-    print(chromosome_b)
-    print(keep_assign)
-    print(crossover_chromosome)
-
-
-
-    simple_chromosome_a = simplify_chromosome(chromosome_a, nurse_index_a)
-    simple_chromosome_b = simplify_chromosome(chromosome_b, nurse_index_b)
-
-    crossover_point = random.randrange(len(simple_chromosome_a))
-    start_chromosome_a = [*simple_chromosome_a[:crossover_point]]
-    end_chromosome_a = [*simple_chromosome_a[crossover_point:]]
-    start_chromosome_b = [*simple_chromosome_b[:crossover_point]]
-    end_chromosome_b = [*simple_chromosome_b[crossover_point:]]
-
-    crossover_chromosome_a = [*start_chromosome_a]
-    for gene in end_chromosome_b:
-        if gene not in start_chromosome_a:
-            crossover_chromosome_a.append(gene)
-    for gene in end_chromosome_a:
-        if gene not in crossover_chromosome_a:
-            crossover_chromosome_a.append(gene)
-
-    crossover_chromosome_a = complexify_chromosome(crossover_chromosome_a, nurse_index_a)
-
-    crossover_chromosome_b = []
-    for gene in start_chromosome_b:
-        if gene not in end_chromosome_a:
-            crossover_chromosome_b.append(gene)
-    for gene in start_chromosome_a:
-        if gene not in crossover_chromosome_b:
-            crossover_chromosome_b.append(gene)
-    crossover_chromosome_b = [*crossover_chromosome_b, *end_chromosome_a]
-
-    crossover_chromosome_b = complexify_chromosome(crossover_chromosome_b, nurse_index_a)
-
-    return crossover_chromosome_a, crossover_chromosome_b
 
 def get_nurse_index(chromosome):
     return [i for i, x in enumerate(chromosome) if x == "N"]
 
-def simplify_chromosome(full_chromosome, nurse_index):
-    simple_chromosome = []
-    from_index = 0
-    for index in nurse_index:
-        simple_chromosome = [*simple_chromosome, *full_chromosome[from_index:index]]
-        from_index = index+1
-    return [*simple_chromosome, *full_chromosome[from_index:]]
-
-def complexify_chromosome(simple_chromosome, nurse_index):
-    complex_chromosome = simple_chromosome.copy()
-    for index in nurse_index:
-        complex_chromosome.insert(index, "N")
-    return complex_chromosome
 
 def mutation(chromosome):
     gene_index = []
@@ -274,10 +256,11 @@ def mutation(chromosome):
     mutated_gene_A = chromosome[gene_index[0]]
     mutated_gene_B = chromosome[gene_index[1]]
 
-    chromosome[gene_index[0]]=mutated_gene_B
-    chromosome[gene_index[1]]=mutated_gene_A
+    chromosome[gene_index[0]] = mutated_gene_B
+    chromosome[gene_index[1]] = mutated_gene_A
 
     return chromosome
+
 
 def main():
     if check_arguments():
@@ -286,39 +269,40 @@ def main():
         patients = retrieve_patients()
 
     pop_size = 100
-    crossover_prob = 0.5
-    mutation_prob = 0.2
+    crossover_prob = 0.3
+    mutation_prob = 0.6
     max_generations = 10000
-    gen_no_change = 250
+    gen_no_change = 100
 
     pool = initialize(pop_size, len(patients))
     evaluations = evaluate(pool, distances, patients);
     generation_number = 0
     generations_no_changes = 0
     min_evaluation = min(evaluations)
-    crossover(pool[0], pool[1])
+    best_chromosome = pool[evaluations.index(min_evaluation)].copy()
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
-        select_and_reproduce()
-        #crossover(pool[0], pool[1])
-        mutation(pool[0])
-        pool = initialize(pop_size, len(patients))
+        pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
         evaluations = evaluate(pool, distances, patients);
         if min_evaluation < min(evaluations):
             generations_no_changes += 1
         else:
+            nurse_assignments = retrieve_assignments(best_chromosome)
+            distance = calculate_distances(nurse_assignments, distances)
+            stdv = calculate_stdv(nurse_assignments, patients)
             print(
-                "Better chromosome found with value {0} at generation {1} after {2} generations without change".format(
-                    min(evaluations), generation_number, generations_no_changes))
+                "Better chromosome found at generation {0} after {1} generations without change with stdv {2} and distance {3}".format(
+                    generation_number, generations_no_changes, stdv, distance))
             min_evaluation = min(evaluations)
+            best_chromosome = pool[evaluations.index(min_evaluation)].copy()
             generations_no_changes = 0
         generation_number += 1
+
+        if generation_number%25 == 0:
+            print("Generation {0}: {1} mean score".format(generation_number, sum(evaluations)/len(evaluations)))
+
+    print("The best chromosome is {0} with score {1}".format(best_chromosome, min_evaluation))
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
