@@ -317,7 +317,6 @@ def main():
     weight_stdv = 1
     weight_distance = 1
 
-
     pool = initialize(pop_size, len(patients), num_nurses)
     evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
     generation_number = 0
