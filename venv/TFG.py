@@ -208,14 +208,20 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
                 if j == 0:
                     new_pool[i] = mutation(new_pool[i])
                 elif j == 1:
-                    new_pool[i] = crossover(new_pool[i], best_chromosome)
+                    crossover_type = random.randint(1,3)
+                    if crossover_type == 1:
+                        new_pool[i] = ordered_crossover(new_pool[i], best_chromosome)
+                    elif crossover_type == 2:
+                        new_pool[i] = simple_crossover(new_pool[i], best_chromosome)
+                    elif crossover_type == 3:
+                        new_pool[i] = double_crossover(new_pool[i], best_chromosome)
                 break
 
     new_pool.append(best_chromosome)
 
     return new_pool
 
-def crossover(chromosome_a, chromosome_b):
+def ordered_crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
 
     kept_assign = random.randrange(len(nurse_index_a) + 1)
@@ -253,18 +259,20 @@ def simple_crossover(chromosome_a, chromosome_b):
     crossover_point = random.randrange(len(parent_a))
 
     start_parent_a = parent_a[:crossover_point]
+    start_parent_b = parent_b[:crossover_point]
     end_parent_a = parent_a[crossover_point:]
     end_parent_b = parent_b[crossover_point:]
 
     crossover_chromosome = [*start_parent_a]
 
     for index in range(len(end_parent_b)):
-        if end_parent_b[index] not in crossover_chromosome:
+        if end_parent_b[index] not in start_parent_a:
             crossover_chromosome.append(end_parent_b[index])
         else:
-            crossover_chromosome.append(end_parent_a[index])
-
+            index_map = start_parent_a.index(end_parent_b[index])
+            crossover_chromosome.append(start_parent_a[index_map])
     return complexify_chromosome(crossover_chromosome, nurse_index_a)
+
 
 def double_crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
