@@ -40,8 +40,8 @@ def retrieve_rooms():
         for t in f.read().split():
             a, b = t.strip('()').split(',')
             rooms.append((int(a), int(b)))
-        return rooms
         f.close()
+        return rooms
 
 
 def calculate_room_distances(rooms):
@@ -60,14 +60,14 @@ def calculate_room_distances(rooms):
     return distances_list
 
 
-def manhattan_distance(A, B):
+def manhattan_distance(point_a, point_b):
     """Gives the Manhattan distance of two coordinates
 
-    :param A: coordinates of point A
-    :param B: coordinates of point B
+    :param point_a: coordinates of point A
+    :param point_b: coordinates of point B
     :return: the Manhattan distance
     """
-    return abs(A[0] - B[0]) + abs(A[1] - B[1])
+    return abs(point_a[0] - point_a[0]) + abs(point_a[1] - point_b[1])
 
 
 def retrieve_patients():
@@ -81,8 +81,9 @@ def retrieve_patients():
         print('Cannot open', sys.argv[2])
         print("Try 'TFG --help' for more information")
     else:
-        return f.read().splitlines()
+        patients = f.read().splitlines()
         f.close()
+        return patients
 
 
 def initialize(population_size, num_patients, nurses):
@@ -90,6 +91,7 @@ def initialize(population_size, num_patients, nurses):
     Creates de first generation of chromosomes
     :param population_size: size of the population
     :param num_patients: number of patients
+    :param nurses: number of nurses in each turn
     :return: a pool for the first generation
     """
     base_population = [i for i in range(num_patients)]
@@ -220,6 +222,7 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
     new_pool.append(best_chromosome)
 
     return new_pool
+
 
 def ordered_crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
