@@ -253,6 +253,7 @@ def ordered_crossover(chromosome_a, chromosome_b):
                             crossover_chromosome.insert(i, candidate_gene)
     return crossover_chromosome
 
+
 def simple_crossover(chromosome_a, chromosome_b):
     nurse_index_a = get_nurse_index(chromosome_a)
     nurse_index_b = get_nurse_index(chromosome_b)
@@ -268,12 +269,15 @@ def simple_crossover(chromosome_a, chromosome_b):
 
     crossover_chromosome = [*start_parent_a]
 
-    for index in range(len(end_parent_b)):
-        if end_parent_b[index] not in start_parent_a:
-            crossover_chromosome.append(end_parent_b[index])
+    while len(crossover_chromosome) != len(parent_a):
+        proposed_gene = end_parent_b.pop(0)
+        if proposed_gene not in crossover_chromosome:
+            crossover_chromosome.append(proposed_gene)
         else:
-            index_map = start_parent_a.index(end_parent_b[index])
-            crossover_chromosome.append(start_parent_a[index_map])
+            while proposed_gene in crossover_chromosome or proposed_gene in end_parent_b:
+                proposed_gene = end_parent_a.pop(0)
+            crossover_chromosome.append(proposed_gene)
+
     return complexify_chromosome(crossover_chromosome, nurse_index_a)
 
 
