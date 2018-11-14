@@ -263,7 +263,6 @@ def simple_crossover(chromosome_a, chromosome_b):
     crossover_point = random.randrange(len(parent_a))
 
     start_parent_a = parent_a[:crossover_point]
-    start_parent_b = parent_b[:crossover_point]
     end_parent_a = parent_a[crossover_point:]
     end_parent_b = parent_b[crossover_point:]
 
@@ -300,13 +299,18 @@ def double_crossover(chromosome_a, chromosome_b):
     end_parent_a = parent_a[crossover_points[1]:]
     middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
 
+    clean_pool = [gene for gene in middle_parent_a if gene not in middle_parent_b]
+
     crossover_chromosome = [*start_parent_a]
 
-    for index in range(len(middle_parent_b)):
-        if middle_parent_b[index] not in start_parent_a and middle_parent_b[index] not in end_parent_a:
-            crossover_chromosome.append(middle_parent_b[index])
+    while len(crossover_chromosome) != len(parent_a)-len(end_parent_a):
+        proposed_gene = middle_parent_b.pop(0)
+        if proposed_gene not in crossover_chromosome and proposed_gene not in end_parent_a:
+            crossover_chromosome.append(proposed_gene)
         else:
-            crossover_chromosome.append(middle_parent_a[index])
+            while proposed_gene in crossover_chromosome or proposed_gene in end_parent_a or proposed_gene in middle_parent_b:
+                proposed_gene = middle_parent_a.pop(0)
+            crossover_chromosome.append(proposed_gene)
 
     crossover_chromosome = [*crossover_chromosome, *end_parent_a]
 
