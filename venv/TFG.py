@@ -210,7 +210,7 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
                 if j == 0:
                     new_pool[i] = mutation(new_pool[i])
                 elif j == 1:
-                    crossover_type = random.randint(1,3)
+                    crossover_type = random.randint(1,1)
                     if crossover_type == 1:
                         new_pool[i] = ordered_crossover(new_pool[i], best_chromosome)
                     elif crossover_type == 2:
@@ -356,7 +356,7 @@ def main():
         rooms = retrieve_rooms()
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
-    num_nurses = 4
+    num_nurses = 3
     pop_size = 300
     crossover_prob = 0.3
     mutation_prob = 0.6
