@@ -96,8 +96,8 @@ def initialize(population_size, num_patients, nurses):
     """
     base_population = [i for i in range(num_patients)]
 
-    for nurse in range(nurses-1):
-        base_population.append("N")
+    for nurse in range(-1, -nurses, -1):
+        base_population.append(nurse)
 
     pool = []
     for population in range(population_size):
@@ -119,7 +119,7 @@ def retrieve_assignments(chromosome):
     assigns = []
     nurse_assign = []
     for gene in chromosome:
-        if gene != "N":
+        if gene >= 0:
             nurse_assign.append(gene)
         else:
             assigns.append(nurse_assign)
@@ -210,12 +210,12 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
                 if j == 0:
                     new_pool[i] = mutation(new_pool[i])
                 elif j == 1:
-                    crossover_type = random.randint(1,3)
-                    if crossover_type == 1:
+                    crossover_type = random.choice(["oc", "sc", "dc"])
+                    if crossover_type == "oc":
                         new_pool[i] = ordered_crossover(new_pool[i], best_chromosome)
-                    elif crossover_type == 2:
+                    elif crossover_type == "sc":
                         new_pool[i] = simple_crossover(new_pool[i], best_chromosome)
-                    elif crossover_type == 3:
+                    elif crossover_type == "dc":
                         new_pool[i] = double_crossover(new_pool[i], best_chromosome)
                 break
 
@@ -223,132 +223,98 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
 
     return new_pool
 
-
-def ordered_crossover(chromosome_a, chromosome_b):
-    nurse_index_a = get_nurse_index(chromosome_a)
-
-    kept_assign = random.randrange(len(nurse_index_a) + 1)
-
-    if kept_assign == 0:
-        protected_range = [0, nurse_index_a[kept_assign] - 1]
-    elif kept_assign == len(nurse_index_a):
-        protected_range = [nurse_index_a[kept_assign - 1] + 1, len(chromosome_a) - 1]
-    else:
-        protected_range = [nurse_index_a[kept_assign - 1] + 1, nurse_index_a[kept_assign] - 1]
-
-    crossover_chromosome = []
-    copy_chromosome_b = chromosome_b.copy()
-
-    for i in range(len(chromosome_a)):
-        if chromosome_a[i] == "N":
-            crossover_chromosome.insert(i, "N")
-        elif protected_range[0] <= i <= protected_range[1]:
-            crossover_chromosome.insert(i, chromosome_a[i])
-        else:
-            while len(crossover_chromosome) != i + 1:
-                candidate_gene = copy_chromosome_b.pop(0)
-                if candidate_gene != "N":
-                    if candidate_gene not in crossover_chromosome:
-                        if candidate_gene not in chromosome_a[protected_range[0]:protected_range[1] + 1]:
-                            crossover_chromosome.insert(i, candidate_gene)
-    return crossover_chromosome
-
-
-def simple_crossover(chromosome_a, chromosome_b):
-    nurse_index_a = get_nurse_index(chromosome_a)
-    nurse_index_b = get_nurse_index(chromosome_b)
-    parent_a = simplify_chromosome(chromosome_a, nurse_index_a)
-    parent_b = simplify_chromosome(chromosome_b, nurse_index_b)
-
-    crossover_point = random.randrange(len(parent_a))
-
-    start_parent_a = parent_a[:crossover_point]
-    end_parent_a = parent_a[crossover_point:]
-    end_parent_b = parent_b[crossover_point:]
-
-    crossover_chromosome = [*start_parent_a]
-
-    while len(crossover_chromosome) != len(parent_a):
-        proposed_gene = end_parent_b.pop(0)
-        if proposed_gene not in crossover_chromosome:
-            crossover_chromosome.append(proposed_gene)
-        else:
-            while proposed_gene in crossover_chromosome or proposed_gene in end_parent_b:
-                proposed_gene = end_parent_a.pop(0)
-            crossover_chromosome.append(proposed_gene)
-
-    return complexify_chromosome(crossover_chromosome, nurse_index_a)
-
-
-def double_crossover(chromosome_a, chromosome_b):
-    nurse_index_a = get_nurse_index(chromosome_a)
-    nurse_index_b = get_nurse_index(chromosome_b)
-    parent_a = simplify_chromosome(chromosome_a, nurse_index_a)
-    parent_b = simplify_chromosome(chromosome_b, nurse_index_b)
-
-    crossover_points = []
-    while len(crossover_points) != 2:
-        crossover_point = random.randrange(len(parent_a))
-        if crossover_points not in crossover_points:
-            crossover_points.append(crossover_point)
-
-    crossover_points = sorted(crossover_points)
-
-    start_parent_a = parent_a[:crossover_points[0]]
-    middle_parent_a = parent_a[crossover_points[0]:crossover_points[1]]
-    end_parent_a = parent_a[crossover_points[1]:]
-    middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
-
-    clean_pool = [gene for gene in middle_parent_a if gene not in middle_parent_b]
-
-    crossover_chromosome = [*start_parent_a]
-
-    while len(crossover_chromosome) != len(parent_a)-len(end_parent_a):
-        proposed_gene = middle_parent_b.pop(0)
-        if proposed_gene not in crossover_chromosome and proposed_gene not in end_parent_a:
-            crossover_chromosome.append(proposed_gene)
-        else:
-            while proposed_gene in crossover_chromosome or proposed_gene in end_parent_a or proposed_gene in middle_parent_b:
-                proposed_gene = middle_parent_a.pop(0)
-            crossover_chromosome.append(proposed_gene)
-
-    crossover_chromosome = [*crossover_chromosome, *end_parent_a]
-
-    return complexify_chromosome(crossover_chromosome, nurse_index_a)
-
-def get_nurse_index(chromosome):
-    return [i for i, x in enumerate(chromosome) if x == "N"]
-
-def simplify_chromosome(full_chromosome, nurse_index):
-    simple_chromosome = []
-    from_index = 0
-    for index in nurse_index:
-        simple_chromosome = [*simple_chromosome, *full_chromosome[from_index:index]]
-        from_index = index+1
-    return [*simple_chromosome, *full_chromosome[from_index:]]
-
-def complexify_chromosome(simple_chromosome, nurse_index):
-    complex_chromosome = simple_chromosome.copy()
-    for index in nurse_index:
-        complex_chromosome.insert(index, "N")
-    return complex_chromosome
-
 def mutation(chromosome):
-    gene_index = []
-    while len(gene_index) != 2:
-        index = random.randrange(len(chromosome))
-        if index not in gene_index:
-            gene_index.append(index)
+    mutation_points = random.sample(range(len(chromosome)),2)
 
-    mutated_gene_A = chromosome[gene_index[0]]
-    mutated_gene_B = chromosome[gene_index[1]]
+    mutated_gene_A = chromosome[mutation_points[0]]
+    mutated_gene_B = chromosome[mutation_points[1]]
 
     mutated_chromosome = chromosome.copy()
 
-    mutated_chromosome[gene_index[0]] = mutated_gene_B
-    mutated_chromosome[gene_index[1]] = mutated_gene_A
+    mutated_chromosome[mutation_points[0]] = mutated_gene_B
+    mutated_chromosome[mutation_points[1]] = mutated_gene_A
 
     return mutated_chromosome
+
+
+def ordered_crossover(parent_a, parent_b):
+    nurse_index_a = [i for i, x in enumerate(parent_a) if x < 0]
+
+    part_keep = random.choice(range(len(nurse_index_a)))
+
+    if part_keep == 0:
+        return simple_crossover(parent_a, parent_b, nurse_index_a[0])
+    elif part_keep == len(nurse_index_a):
+        return simple_crossover(parent_a, parent_b, nurse_index_a[-1])
+    else:
+        return double_crossover(parent_a, parent_b, [nurse_index_a[part_keep - 1], nurse_index_a[part_keep] + 1], "borders")
+
+
+def simple_crossover(parent_a, parent_b, crossover_point = None):
+    if crossover_point == None:
+        crossover_point = random.randrange(len(parent_a))
+
+    end_parent_b = parent_b[crossover_point:]
+    missing_genes = [gene for gene in parent_a[crossover_point:] if gene not in end_parent_b]
+    conflict_index = [index for index in range(len(end_parent_b))if end_parent_b[index] in parent_a[:crossover_point]]
+
+    def assign_gene(x, y):
+        end_parent_b[x] = y
+
+    list(map(assign_gene, conflict_index, missing_genes))
+
+    crossover_chromosome = [*parent_a[:crossover_point],*end_parent_b]
+
+    return crossover_chromosome
+
+def double_crossover(parent_a, parent_b, crossover_points=[], crossover_type= None):
+    if len(crossover_points) == 0:
+        crossover_points = sorted(random.sample(range(len(parent_a)), 2))
+
+    if crossover_type == None:
+        crossover_type = random.choice(["middle", "borders"])
+
+    if crossover_type == "middle":
+
+        middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
+
+        missing_genes = [gene for gene in parent_a[crossover_points[0]:crossover_points[1]] if
+                         gene not in middle_parent_b]
+        conflict_index = [index for index in range(len(middle_parent_b)) if
+                          middle_parent_b[index] in parent_a[:crossover_points[0]] or middle_parent_b[
+                              index] in parent_a[crossover_points[1]:]]
+
+        def assign_gene(x, y):
+            middle_parent_b[x] = y
+
+        list(map(assign_gene, conflict_index, missing_genes))
+
+        crossover_chromosome = [*parent_a[:crossover_points[0]], *middle_parent_b, *parent_a[crossover_points[1]:]]
+
+    else:
+        start_parent_a = parent_a[:crossover_points[0]]
+        middle_parent_a = parent_a[crossover_points[0]:crossover_points[1]]
+        end_parent_a = parent_a[crossover_points[1]:]
+
+
+        start_parent_b = parent_b[:crossover_points[0]]
+        middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
+        end_parent_b = parent_b[crossover_points[1]:]
+
+        border_genes_a = [*start_parent_a, *end_parent_a]
+        border_genes_b = [*start_parent_b, *end_parent_b]
+
+        missing_genes = [gene for gene in border_genes_a if gene not in border_genes_b]
+        conflict_index = [index for index in range(len(border_genes_b)) if border_genes_b[index] in middle_parent_a]
+
+        def assign_gene(x, y):
+            border_genes_b[x] = y
+
+        list(map(assign_gene, conflict_index, missing_genes))
+
+        crossover_chromosome = [*border_genes_b[:crossover_points[0]], *middle_parent_a, *border_genes_b[crossover_points[1]-len(parent_a):]]
+
+    return crossover_chromosome
 
 
 def main():
@@ -356,10 +322,10 @@ def main():
         rooms = retrieve_rooms()
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
-    num_nurses = 3
-    pop_size = 300
-    crossover_prob = 0.3
-    mutation_prob = 0.6
+    num_nurses = 4
+    pop_size = 100
+    crossover_prob = 0.05
+    mutation_prob = 0.9
     max_generations = 50000
     gen_no_change = max_generations/100
 
