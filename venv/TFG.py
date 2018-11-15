@@ -141,25 +141,23 @@ def calculate_stdv(assignments, patient_list):
     mean = sum(loads) / n
     sq_differences = [(x - mean) ** 2 for x in loads]
     variance = sum(sq_differences) / n
-    return sqrt(variance)
+    return round(sqrt(variance), 2)
 
 
 def calculate_distances(assignments, distances):
     nurse_distances = []
     for assign in assignments:
-        nurse_distances.append(get_PST(assign, distances))
+        nurse_distances.append(get_pst(assign, distances))
     return sum(nurse_distances)
 
 
-def get_PST(assign, distances):
+def get_pst(assign, distances):
     """
     Calculate Prim's Spanning Tree Algorithm
     :param assign: the assignment from where to calculate the Spanning Tree
     :param distances: distance matrix where to look up the necessary distances
     :return: the path value of the assignment
     """
-    INF = 99999
-    INF = 0
 
     if len(assign) != 0:
         included_nodes = {}
@@ -181,18 +179,18 @@ def get_PST(assign, distances):
             distance += values[0]
         return distance
     else:
-        return INF
+        return 0
 
 
 def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
-    enter_p = [(max(evaluations)+min(evaluations))-eval for eval in evaluations]
-    enter_p = [round(eval/sum(enter_p),4) for eval in enter_p]
+    enter_p = [(max(evaluations)+min(evaluations))-evaluation for evaluation in evaluations]
+    enter_p = [round(evaluation/sum(enter_p), 4) for evaluation in enter_p]
     enter_p = list(accumulate(enter_p))
     enter_p[-1] = 1
 
     best_chromosome = pool[evaluations.index(min(evaluations))]
 
-    change_p = [mutation_rate, mutation_rate+crossover_rate,1]
+    change_p = [mutation_rate, mutation_rate+crossover_rate, 1]
 
     new_pool = []
 
@@ -223,16 +221,17 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
 
     return new_pool
 
-def mutation(chromosome):
-    mutation_points = random.sample(range(len(chromosome)),2)
 
-    mutated_gene_A = chromosome[mutation_points[0]]
-    mutated_gene_B = chromosome[mutation_points[1]]
+def mutation(chromosome):
+    mutation_points = random.sample(range(len(chromosome)), 2)
+
+    mutated_gene_a = chromosome[mutation_points[0]]
+    mutated_gene_b = chromosome[mutation_points[1]]
 
     mutated_chromosome = chromosome.copy()
 
-    mutated_chromosome[mutation_points[0]] = mutated_gene_B
-    mutated_chromosome[mutation_points[1]] = mutated_gene_A
+    mutated_chromosome[mutation_points[0]] = mutated_gene_b
+    mutated_chromosome[mutation_points[1]] = mutated_gene_a
 
     return mutated_chromosome
 
@@ -247,11 +246,12 @@ def ordered_crossover(parent_a, parent_b):
     elif part_keep == len(nurse_index_a):
         return simple_crossover(parent_a, parent_b, nurse_index_a[-1])
     else:
-        return double_crossover(parent_a, parent_b, [nurse_index_a[part_keep - 1], nurse_index_a[part_keep] + 1], "borders")
+        return double_crossover(parent_a, parent_b, [nurse_index_a[part_keep - 1],
+                                                     nurse_index_a[part_keep] + 1], "borders")
 
 
-def simple_crossover(parent_a, parent_b, crossover_point = None):
-    if crossover_point == None:
+def simple_crossover(parent_a, parent_b, crossover_point=None):
+    if crossover_point is None:
         crossover_point = random.randrange(len(parent_a))
 
     end_parent_b = parent_b[crossover_point:]
@@ -263,15 +263,18 @@ def simple_crossover(parent_a, parent_b, crossover_point = None):
 
     list(map(assign_gene, conflict_index, missing_genes))
 
-    crossover_chromosome = [*parent_a[:crossover_point],*end_parent_b]
+    crossover_chromosome = [*parent_a[:crossover_point], *end_parent_b]
 
     return crossover_chromosome
 
-def double_crossover(parent_a, parent_b, crossover_points=[], crossover_type= None):
+
+def double_crossover(parent_a, parent_b, crossover_points=None, crossover_type=None):
+    if crossover_points is None:
+        crossover_points = []
     if len(crossover_points) == 0:
         crossover_points = sorted(random.sample(range(len(parent_a)), 2))
 
-    if crossover_type == None:
+    if crossover_type is None:
         crossover_type = random.choice(["middle", "borders"])
 
     if crossover_type == "middle":
@@ -296,7 +299,6 @@ def double_crossover(parent_a, parent_b, crossover_points=[], crossover_type= No
         middle_parent_a = parent_a[crossover_points[0]:crossover_points[1]]
         end_parent_a = parent_a[crossover_points[1]:]
 
-
         start_parent_b = parent_b[:crossover_points[0]]
         middle_parent_b = parent_b[crossover_points[0]:crossover_points[1]]
         end_parent_b = parent_b[crossover_points[1]:]
@@ -312,7 +314,8 @@ def double_crossover(parent_a, parent_b, crossover_points=[], crossover_type= No
 
         list(map(assign_gene, conflict_index, missing_genes))
 
-        crossover_chromosome = [*border_genes_b[:crossover_points[0]], *middle_parent_a, *border_genes_b[crossover_points[1]-len(parent_a):]]
+        crossover_chromosome = [*border_genes_b[:crossover_points[0]], *middle_parent_a,
+                                *border_genes_b[crossover_points[1]-len(parent_a):]]
 
     return crossover_chromosome
 
@@ -323,13 +326,13 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
     num_nurses = 4
-    pop_size = 100
-    crossover_prob = 0.05
-    mutation_prob = 0.9
+    pop_size = 350
+    crossover_prob = 0.3
+    mutation_prob = 0.6
     max_generations = 50000
     gen_no_change = max_generations/100
 
-    weight_stdv = 1
+    weight_stdv = 50
     weight_distance = 1
 
     pool = initialize(pop_size, len(patients), num_nurses)
@@ -356,10 +359,15 @@ def main():
             generations_no_changes = 0
         generation_number += 1
 
-        if generation_number%100 == 0:
-            print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score".format(generation_number, min(evaluations), max(evaluations), sum(evaluations), sum(evaluations)/len(evaluations), sorted(evaluations)[round(len(evaluations)/2)]))
+        if generation_number % 100 == 0:
+            print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score"
+                  .format(generation_number, min(evaluations), max(evaluations), round(sum(evaluations), 2),
+                          round(sum(evaluations)/len(evaluations), 2),
+                          round(sorted(evaluations)[round(len(evaluations)/2)], 2)))
 
-    print("The best chromosome is {0} with score {1}".format(best_chromosome, min_evaluation))
+    print("The best chromosome is {0} with score {1} after {2} generations"
+          .format(best_chromosome, min_evaluation, generation_number))
+
 
 if __name__ == "__main__":
     main()
