@@ -167,10 +167,10 @@ def get_pst(assign, distances):
             distance = minimum_node[0]
             visiting_node = minimum_node[1]
             parent = minimum_node[2]
-            if visiting_node not in [*included_nodes]:
+            if visiting_node not in included_nodes:
                 included_nodes[visiting_node] = (distance, parent)
                 for vertex in range(len(assign)):
-                    if vertex not in [*included_nodes]:
+                    if vertex not in included_nodes:
                         heapq.heappush(priority_queue,
                                        (distances[assign[vertex]][assign[visiting_node]], vertex, visiting_node))
         distance = 0
@@ -320,14 +320,14 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
     num_nurses = 4
-    pop_size = 250
+    pop_size = 50
     crossover_prob = 0.3
     mutation_prob = 0.6
-    max_generations = 50000
-    gen_no_change = max_generations/25
+    max_generations = 10000
+    gen_no_change = max_generations/1
 
-    weight_stdv = 100
-    weight_distance = 0
+    weight_stdv = 1
+    weight_distance = 1
 
     pool = initialize(pop_size, len(patients), num_nurses)
     evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
