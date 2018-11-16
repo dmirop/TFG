@@ -130,18 +130,17 @@ def retrieve_assignments(chromosome):
 
 
 def calculate_stdv(assignments, patient_list):
-    n = len(assignments)
-    loads = []
-    for assign in assignments:
-        load = 0
-        if len(assign) != 0:
-            for patient in assign:
-                load += int(patient_list[patient])
-        loads.append(load)
-    mean = sum(loads) / n
+
+    loads = [[int(patient_list[index]) for index in assign] for assign in assignments]
+    loads = [sum(load) for load in loads]
+
+    mean = sum(loads)/len(loads)
+
     sq_differences = [(x - mean) ** 2 for x in loads]
-    variance = sum(sq_differences) / n
-    return round(sqrt(variance), 2)
+
+    variance = sum(sq_differences)/len(sq_differences)
+
+    return sqrt(variance)
 
 
 def calculate_distances(assignments, distances):
@@ -183,39 +182,34 @@ def get_pst(assign, distances):
 
 
 def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
-    enter_p = [(max(evaluations)+min(evaluations))-evaluation for evaluation in evaluations]
-    enter_p = [round(evaluation/sum(enter_p), 4) for evaluation in enter_p]
-    enter_p = list(accumulate(enter_p))
-    enter_p[-1] = 1
-
     best_chromosome = pool[evaluations.index(min(evaluations))]
 
-    change_p = [mutation_rate, mutation_rate+crossover_rate, 1]
+    converting_factor = max(evaluations) + min(evaluations)
+    sum_evaluations = sum(evaluations)
+    enter_p = [round((converting_factor-evaluation)/sum_evaluations, 4) for evaluation in evaluations]
+    enter_p = list(accumulate(enter_p))
 
-    new_pool = []
+    change_p = [mutation_rate, crossover_rate+mutation_rate, 1]
 
-    for i in range(len(pool)-1):
-        rndm = random.random()
-        for j in range(len(enter_p)):
-            if rndm <= enter_p[j]:
-                new_pool.insert(i, pool[j])
-                break
+    new_pool = random.choices(pool, cum_weights=enter_p, k=len(pool)-1)
 
-    for i in range(len(new_pool)):
-        rndm = random.random()
-        for j in range(len(change_p)):
-            if rndm <= change_p[j]:
-                if j == 0:
-                    new_pool[i] = mutation(new_pool[i])
-                elif j == 1:
-                    crossover_type = random.choice(["oc", "sc", "dc"])
-                    if crossover_type == "oc":
-                        new_pool[i] = ordered_crossover(new_pool[i], best_chromosome)
-                    elif crossover_type == "sc":
-                        new_pool[i] = simple_crossover(new_pool[i], best_chromosome)
-                    elif crossover_type == "dc":
-                        new_pool[i] = double_crossover(new_pool[i], best_chromosome)
-                break
+    for index in range(len(new_pool)):
+        change = random.choices(["mut", "cross", "no_change"], cum_weights=change_p)
+
+        if change[0] == "mut":
+            new_pool[index] = mutation(new_pool[index])
+
+        elif change[0] == "cross":
+            crossover_type = random.choice(["ordered", "simple", "double"])
+            if crossover_type == "ordered":
+                new_pool[index] = ordered_crossover(new_pool[index], best_chromosome)
+            elif crossover_type == "simple":
+                new_pool[index] = simple_crossover(new_pool[index], best_chromosome)
+            elif crossover_type == "double":
+                new_pool[index] = double_crossover(new_pool[index], best_chromosome)
+
+        elif change[0] == "no_change":
+            pass
 
     new_pool.append(best_chromosome)
 
@@ -326,14 +320,14 @@ def main():
         distances = calculate_room_distances(rooms)
         patients = retrieve_patients()
     num_nurses = 4
-    pop_size = 350
+    pop_size = 250
     crossover_prob = 0.3
     mutation_prob = 0.6
     max_generations = 50000
-    gen_no_change = max_generations/100
+    gen_no_change = max_generations/25
 
-    weight_stdv = 50
-    weight_distance = 1
+    weight_stdv = 100
+    weight_distance = 0
 
     pool = initialize(pop_size, len(patients), num_nurses)
     evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
@@ -361,9 +355,9 @@ def main():
 
         if generation_number % 100 == 0:
             print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score"
-                  .format(generation_number, min(evaluations), max(evaluations), round(sum(evaluations), 2),
-                          round(sum(evaluations)/len(evaluations), 2),
-                          round(sorted(evaluations)[round(len(evaluations)/2)], 2)))
+                  .format(generation_number, min(evaluations), max(evaluations), sum(evaluations),
+                          sum(evaluations)/len(evaluations),
+                          sorted(evaluations)[round(len(evaluations)/2)]))
 
     print("The best chromosome is {0} with score {1} after {2} generations"
           .format(best_chromosome, min_evaluation, generation_number))
