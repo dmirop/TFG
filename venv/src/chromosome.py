@@ -4,7 +4,7 @@ from random import sample, randrange, choice
 
 
 class Chromosome:
-    def __init__(self, gene_sequence=[]):
+    def __init__(self, gene_sequence):
         self._gene_sequence = gene_sequence
         self._evaluation = 0
 
@@ -121,7 +121,7 @@ class Chromosome:
 
 class AssignmentChromosome(Chromosome):
     def ordered_crossover(self, other):
-        nurse_index_a = [i for i, x in enumerate(self.get_gene_sequence()) if x < 0]
+        nurse_index_a = self.get_nurse_indices()
 
         part_keep = choice(range(len(nurse_index_a)))
 
@@ -140,8 +140,11 @@ class AssignmentChromosome(Chromosome):
             if gene >= 0:
                 nurse_assign.append(gene)
             else:
-                assigns.append(sorted(nurse_assign))
+                assigns.append(nurse_assign)
                 nurse_assign = []
         assigns.append(nurse_assign)
 
         return assigns
+
+    def get_nurse_indices(self):
+        return [i for i, x in enumerate(self._gene_sequence) if x < 0]

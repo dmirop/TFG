@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import pool
-import chromosome
+import chromosome as chroms
 from random import choices, choice, sample
 from math import sqrt
 import heapq
@@ -59,8 +59,8 @@ class GeneticAlgorithm:
 
 
 class AssignmentsGA(GeneticAlgorithm):
-    def __init__(self, rooms, distance_matrix, patients, pool_size=10, p_cross=0.8, p_muta=0, max_gen=500, max_change=50,
-                 nurses=4, w_loads=1, w_dist=1):
+    def __init__(self, rooms, distance_matrix, patients, pool_size=50, p_cross=0.8, p_muta=0.05, max_gen=2000,
+                 max_change=1500, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, max_gen, max_change)
         self._rooms = rooms
         self._distance_matrix = distance_matrix
@@ -79,6 +79,7 @@ class AssignmentsGA(GeneticAlgorithm):
         enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
 
         reproduce_p = [self._p_cross, 1-self._p_cross]
+
         mutate_p = [self._p_muta, 1-self._p_muta]
 
         candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size - 1)
@@ -86,6 +87,7 @@ class AssignmentsGA(GeneticAlgorithm):
         new_pool = pool.Pool()
 
         for candidate in candidates_list:
+            candidate = cp.copy(candidate)
             reproduce = choices(["cross", "no_change"], weights=reproduce_p)
             if reproduce[0] == "cross":
                 crossover_type = choice(["ordered", "simple", "double"])
@@ -121,18 +123,20 @@ class AssignmentsGA(GeneticAlgorithm):
 
         for population in range(self._pool_size):
             gene_sequence = sample(base_population, len(base_population))
-            starting_chromosome = chromosome.AssignmentChromosome(gene_sequence)
+            starting_chromosome = chroms.AssignmentChromosome(gene_sequence)
             starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
             starting_pool.add_chromosome(starting_chromosome)
         self._pool = starting_pool
 
     def evaluate(self, chromosome):
         nurse_assignments = chromosome.get_assignments()
-        stdv = self.calculate_stdv(nurse_assignments)
+        loads = self.calculate_load(nurse_assignments)
         distance = self.calculate_distances(nurse_assignments)
-        return (self._w_loads * stdv) + (self._w_dist * distance)
 
-    def calculate_stdv(self, assignments):
+        evaluation = (self._w_loads * loads) + (self._w_dist * distance)
+        return evaluation
+
+    def calculate_load(self, assignments):
 
         loads = self.transform_assignments_loads(assignments)
 
@@ -157,12 +161,6 @@ class AssignmentsGA(GeneticAlgorithm):
         return sum(nurse_distances)
 
     def get_pst(self, assign):
-        """
-        Calculate Prim's Spanning Tree Algorithm
-        :param assign: the assignment from where to calculate the Spanning Tree
-        :param distances: distance matrix where to look up the necessary distances
-        :return: the path value of the assignment
-        """
 
         if len(assign) != 0:
             included_nodes = {}
@@ -178,7 +176,8 @@ class AssignmentsGA(GeneticAlgorithm):
                     for vertex in range(len(assign)):
                         if vertex not in included_nodes:
                             heapq.heappush(priority_queue,
-                                           (self._distance_matrix[assign[vertex]][assign[visiting_node]], vertex, visiting_node))
+                                           (self._distance_matrix[assign[vertex]][assign[visiting_node]],
+                                            vertex, visiting_node))
             distance = 0
             for values in included_nodes.values():
                 distance += values[0]

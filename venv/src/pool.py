@@ -27,7 +27,8 @@ class Pool:
 
     def get_stats(self):
         evaluations = self.get_evaluations()
-        return min(evaluations), max(evaluations), sum(evaluations), sum(evaluations)/len(evaluations), sorted(evaluations)[round(len(evaluations)/2)]
+        return min(evaluations), max(evaluations), sum(evaluations), sum(evaluations)/len(evaluations), \
+            sorted(evaluations)[round(len(evaluations)/2)]
 
     def get_pool_list(self):
         return self._pool_list
