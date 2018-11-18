@@ -239,12 +239,12 @@ def main():
 
     num_nurses = 4
     pop_size = 100
-    crossover_prob = 0.8
-    mutation_prob = 0.2
-    max_generations = 1000
-    gen_no_change = max_generations/5
+    crossover_prob = 0.7
+    mutation_prob = 0.3
+    max_generations = 2000
+    gen_no_change = 1500
 
-    weight_stdv = 0
+    weight_stdv = 1
     weight_distance = 1
 
     pool = initialize(pop_size, num_nurses)
