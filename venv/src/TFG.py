@@ -5,7 +5,9 @@ import random
 from math import sqrt
 import heapq
 from itertools import accumulate
-import chromosome_utils
+import chromosome
+import pool
+import ga
 
 rooms = []
 distances = []
@@ -237,49 +239,10 @@ def main():
 
         retrieve_patients()
 
-    num_nurses = 4
-    pop_size = 100
-    crossover_prob = 0.7
-    mutation_prob = 0.3
-    max_generations = 2000
-    gen_no_change = 1500
+    random.seed(0)
 
-    weight_stdv = 1
-    weight_distance = 1
-
-    pool = initialize(pop_size, num_nurses)
-    evaluations = evaluate(pool, weight_stdv, weight_distance)
-    generation_number = 0
-    generations_no_changes = 0
-    min_evaluation = min(evaluations)
-    best_chromosome = pool[evaluations.index(min_evaluation)].copy()
-
-    while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
-        pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
-        evaluations = evaluate(pool, weight_stdv, weight_distance)
-        if min_evaluation <= min(evaluations):
-            generations_no_changes += 1
-        else:
-            min_evaluation = min(evaluations)
-            best_chromosome = pool[evaluations.index(min_evaluation)].copy()
-            nurse_assignments = retrieve_assignments(best_chromosome)
-            distance = calculate_distances(nurse_assignments)
-            stdv = calculate_stdv(nurse_assignments)
-            print(
-                "Better chromosome found at generation {0} with stdv {1} and distance {2}".format(
-                    generation_number, stdv, distance))
-            generations_no_changes = 0
-        generation_number += 1
-
-        if generation_number % 100 == 0:
-            print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score"
-                  .format(generation_number, min(evaluations), max(evaluations), sum(evaluations),
-                          sum(evaluations)/len(evaluations),
-                          sorted(evaluations)[round(len(evaluations)/2)]))
-
-    print("The best chromosome is {0} with score {1} after {2} generations"
-          .format(best_chromosome, min_evaluation, generation_number))
-
+    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients)
+    genetic_algorithm.run()
 
 if __name__ == "__main__":
     main()
