@@ -105,7 +105,6 @@ class Chromosome:
             self.set_gene_sequence([*start_parent_a, *middle_parent_b, *end_parent_a])
 
         else:
-
             missing_genes = [gene for gene in borders_parent_a if gene not in borders_parent_b]
             conflict_index = [index for index in range(len(borders_parent_b)) if
                               borders_parent_b[index] in middle_parent_a]
@@ -116,22 +115,22 @@ class Chromosome:
             list(map(assign_gene, conflict_index, missing_genes))
 
             self.set_gene_sequence([*borders_parent_b[:crossover_points[0]], *middle_parent_a,
-                                    *borders_parent_b[crossover_points[1] - len(self._gene_sequence):]])
+                                    *borders_parent_b[crossover_points[0]:]])
 
 
 class AssignmentChromosome(Chromosome):
     def ordered_crossover(self, other):
-        nurse_index_a = self.get_nurse_indices()
+        nurse_index = self.get_nurse_indices()
 
-        part_keep = choice(range(len(nurse_index_a)))
+        part_keep = choice(range(len(nurse_index)))
 
         if part_keep == 0:
-            self.simple_crossover(other, nurse_index_a[0], c_type="start")
-        elif part_keep == len(nurse_index_a):
-            self.simple_crossover(other, nurse_index_a[-1], c_type="end")
+            self.simple_crossover(other, nurse_index[0], c_type="start")
+        elif part_keep == len(nurse_index):
+            self.simple_crossover(other, nurse_index[-1], c_type="end")
         else:
-            self.double_crossover(other, [nurse_index_a[part_keep - 1],
-                                          nurse_index_a[part_keep] + 1], "middle")
+            self.double_crossover(other, [nurse_index[part_keep - 1],
+                                          nurse_index[part_keep] + 1], "middle")
 
     def get_assignments(self):
         assigns = []

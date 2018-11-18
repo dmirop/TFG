@@ -96,7 +96,7 @@ def main():
 
         retrieve_patients()
 
-    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, pool_size=100, max_gen=100)
+    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, pool_size=75, max_gen=10000)
     genetic_algorithm.run()
 
 
