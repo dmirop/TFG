@@ -60,7 +60,7 @@ class GeneticAlgorithm:
 
 class AssignmentsGA(GeneticAlgorithm):
     def __init__(self, rooms, distance_matrix, patients, pool_size=50, p_cross=0.8, p_muta=0.05, max_gen=2000,
-                 max_change=1500, nurses=4, w_loads=0, w_dist=1):
+                 max_change=1500, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, max_gen, max_change)
         self._rooms = rooms
         self._distance_matrix = distance_matrix
