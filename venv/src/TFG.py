@@ -7,6 +7,10 @@ import heapq
 from itertools import accumulate
 import chromosome_utils
 
+rooms = []
+distances = []
+patients = []
+
 
 def check_arguments():
     """Asserts the right number of arguments
@@ -38,28 +42,23 @@ def retrieve_rooms():
         print("Try 'TFG --help' for more information")
         exit(1)
     else:
-        rooms = []
         for t in f.read().split():
             a, b = t.strip('()').split(',')
             rooms.append((int(a), int(b)))
         f.close()
-        return rooms
 
 
-def calculate_room_distances(rooms):
+def calculate_room_distances():
     """Computes the distance between rooms
 
     :param rooms: a list of room coordinates
     :return: a list of distance lists
     """
-    distances_list = []
     for from_room in rooms:
         distance_room_list = []
         for to_room in rooms:
             distance_room_list.append(manhattan_distance(from_room, to_room))
-        distances_list.append(distance_room_list)
-
-    return distances_list
+        distances.append(distance_room_list)
 
 
 def manhattan_distance(point_a, point_b):
@@ -84,20 +83,20 @@ def retrieve_patients():
         print("Try 'TFG --help' for more information")
         exit(1)
     else:
-        patients = f.read().splitlines()
+        for patient in f.read().splitlines():
+            patients.append(patient)
         f.close()
-        return patients
 
 
-def initialize(population_size, num_patients, nurses):
+def initialize(population_size, nurses):
     """
-    Creates de first generation of chromosomes
+    Creates the first generation of chromosomes
     :param population_size: size of the population
     :param num_patients: number of patients
     :param nurses: number of nurses in each turn
     :return: a pool for the first generation
     """
-    base_population = [i for i in range(num_patients)]
+    base_population = [i for i in range(len(patients))]
 
     for nurse in range(-1, -nurses, -1):
         base_population.append(nurse)
@@ -108,12 +107,12 @@ def initialize(population_size, num_patients, nurses):
     return pool
 
 
-def evaluate(pool_list, distance_matrix, patient_list, coeficient_stdv, coeficient_distance):
+def evaluate(pool_list, coeficient_stdv, coeficient_distance):
     evaluations = []
     for chromosome in pool_list:
         nurse_assignments = retrieve_assignments(chromosome)
-        stdv = calculate_stdv(nurse_assignments, patient_list)
-        distance = calculate_distances(nurse_assignments, distance_matrix)
+        stdv = calculate_stdv(nurse_assignments)
+        distance = calculate_distances(nurse_assignments)
         evaluations.append((coeficient_stdv * stdv) + (coeficient_distance * distance))
     return evaluations
 
@@ -132,9 +131,10 @@ def retrieve_assignments(chromosome):
     return assigns
 
 
-def calculate_stdv(assignments, patient_list):
+def calculate_stdv(assignments):
 
-    loads = [[int(patient_list[index]) for index in assign] for assign in assignments]
+    loads = transform_assignments_loads(assignments)
+
     loads = [sum(load) for load in loads]
 
     mean = sum(loads)/len(loads)
@@ -146,14 +146,19 @@ def calculate_stdv(assignments, patient_list):
     return sqrt(variance)
 
 
-def calculate_distances(assignments, distances):
+def transform_assignments_loads(assignments):
+
+    return [[int(patients[index]) for index in assign] for assign in assignments]
+
+
+def calculate_distances(assignments):
     nurse_distances = []
     for assign in assignments:
-        nurse_distances.append(get_pst(assign, distances))
+        nurse_distances.append(get_pst(assign))
     return sum(nurse_distances)
 
 
-def get_pst(assign, distances):
+def get_pst(assign):
     """
     Calculate Prim's Spanning Tree Algorithm
     :param assign: the assignment from where to calculate the Spanning Tree
@@ -220,22 +225,30 @@ def select_and_reproduce(pool, mutation_rate, crossover_rate, evaluations):
 
 
 def main():
-    if check_arguments():
-        rooms = retrieve_rooms()
-        distances = calculate_room_distances(rooms)
-        patients = retrieve_patients()
-    num_nurses = 4
-    pop_size = 1000
-    crossover_prob = 0.8
-    mutation_prob = 0.1
-    max_generations = 10000
-    gen_no_change = max_generations/1
+    global rooms
+    global distances
+    global patients
 
-    weight_stdv = 1
+    if check_arguments():
+
+        retrieve_rooms()
+
+        calculate_room_distances()
+
+        retrieve_patients()
+
+    num_nurses = 4
+    pop_size = 100
+    crossover_prob = 0.8
+    mutation_prob = 0.2
+    max_generations = 1000
+    gen_no_change = max_generations/5
+
+    weight_stdv = 0
     weight_distance = 1
 
-    pool = initialize(pop_size, len(patients), num_nurses)
-    evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
+    pool = initialize(pop_size, num_nurses)
+    evaluations = evaluate(pool, weight_stdv, weight_distance)
     generation_number = 0
     generations_no_changes = 0
     min_evaluation = min(evaluations)
@@ -243,15 +256,15 @@ def main():
 
     while (generation_number < max_generations) and (generations_no_changes < gen_no_change):
         pool = select_and_reproduce(pool, mutation_prob, crossover_prob, evaluations)
-        evaluations = evaluate(pool, distances, patients, weight_stdv, weight_distance)
+        evaluations = evaluate(pool, weight_stdv, weight_distance)
         if min_evaluation <= min(evaluations):
             generations_no_changes += 1
         else:
             min_evaluation = min(evaluations)
             best_chromosome = pool[evaluations.index(min_evaluation)].copy()
             nurse_assignments = retrieve_assignments(best_chromosome)
-            distance = calculate_distances(nurse_assignments, distances)
-            stdv = calculate_stdv(nurse_assignments, patients)
+            distance = calculate_distances(nurse_assignments)
+            stdv = calculate_stdv(nurse_assignments)
             print(
                 "Better chromosome found at generation {0} with stdv {1} and distance {2}".format(
                     generation_number, stdv, distance))
