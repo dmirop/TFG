@@ -237,12 +237,13 @@ def main():
 
         retrieve_patients()
 
+    random.seed(0)
     num_nurses = 4
     pop_size = 100
-    crossover_prob = 0.7
-    mutation_prob = 0.3
-    max_generations = 2000
-    gen_no_change = 1500
+    crossover_prob = 0.8
+    mutation_prob = 0
+    max_generations = 500
+    gen_no_change = 50
 
     weight_stdv = 1
     weight_distance = 1
