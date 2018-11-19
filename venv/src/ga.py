@@ -6,6 +6,7 @@ from random import choices, choice, sample
 from math import sqrt
 import heapq
 import copy as cp
+import time
 
 
 class GeneticAlgorithm:
@@ -26,6 +27,9 @@ class GeneticAlgorithm:
     def evaluate(self, chromosome):
         raise NotImplementedError
 
+    def create_file_name(self):
+        raise NotImplementedError
+
     def run(self):
 
         self.initialize()
@@ -35,6 +39,9 @@ class GeneticAlgorithm:
 
         best_chromosome = cp.copy(self._pool.get_best_chromosome())
         min_evaluation = best_chromosome.get_evaluation()
+        log = open(self.create_file_name(), "w")
+        log.write("MIN, MAX, SUM, MEAN, MEDIAN\n")
+        log.write(str(self._pool.get_stats()).strip("()")+"\n")
 
         while (generation_number < self._max_gen) and (generations_no_changes < self._max_change):
             self.select_and_reproduce()
@@ -49,6 +56,8 @@ class GeneticAlgorithm:
                 generations_no_changes = 0
             generation_number += 1
 
+            log.write(str(self._pool.get_stats()).strip("()")+"\n")
+
             if generation_number % 100 == 0:
                 stats = self._pool.get_stats()
                 print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score"
@@ -56,6 +65,7 @@ class GeneticAlgorithm:
 
         print("The best chromosome is {0} with score {1} after {2} generations"
               .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number))
+        log.close()
 
 
 class AssignmentsGA(GeneticAlgorithm):
@@ -68,6 +78,12 @@ class AssignmentsGA(GeneticAlgorithm):
         self._nurses = nurses
         self._w_loads = w_loads
         self._w_dist = w_dist
+
+    def create_file_name(self):
+        readable = time.ctime(time.time())
+        return readable + "_" + str(self._p_cross) + "_" + str(self._p_muta) + "_" + str(self._pool_size) \
+               + "_" + str(self._max_gen) + "_" + str(self._max_change) + "_" + str(self._w_dist) + "_" \
+               + str(self._w_loads) + ".txt"
 
     def select_and_reproduce(self):
 
