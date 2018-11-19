@@ -133,6 +133,9 @@ class Chromosome:
             if sorted(self._gene_sequence) != sorted(previous_gene_seq):
                 raise BaseException("The double middle crossover has produced a non valid chromosome")
 
+    def print(self):
+        return "Chromosome with score {0}\n".format(self.get_evaluation())
+
 
 class AssignmentChromosome(Chromosome):
     def ordered_crossover(self, other):
@@ -163,3 +166,4 @@ class AssignmentChromosome(Chromosome):
 
     def get_nurse_indices(self):
         return [i for i, x in enumerate(self._gene_sequence) if x < 0]
+

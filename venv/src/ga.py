@@ -9,6 +9,11 @@ import copy as cp
 import time
 
 
+def create_file_name():
+    readable = (str(time.ctime(time.time()))).replace(":", "_")
+    return readable
+
+
 class GeneticAlgorithm:
     def __init__(self, pool_size=50, p_cross=0.8, p_muta=0.05, elitism=True, max_gen=3000, max_change=1500):
         self._pool = pool.Pool()
@@ -19,14 +24,13 @@ class GeneticAlgorithm:
         self._max_change = max_change
         self._elitism = elitism
 
-    def create_file_name(self):
-        readable = (str(time.ctime(time.time()))).replace(":", "_")
-        return readable
-
     def get_parameters(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def initialize(self):
+        raise NotImplementedError
+
+    def generate_chromosome_info(self, chromosome):
         raise NotImplementedError
 
     def evaluate(self, chromosome):
@@ -37,11 +41,13 @@ class GeneticAlgorithm:
 
     def run(self):
 
-        base_file_name = self.create_file_name()
+        base_file_name = create_file_name()
 
         parameters = open(base_file_name + "_param", "w")
         parameters.write(self.get_parameters())
         parameters.close()
+
+        chromosomes = open(base_file_name + "_chrom", "w")
 
         log = open(base_file_name + "_log", "w")
         log.write("MIN, MAX, SUM, MEAN, MEDIAN\n")
@@ -63,6 +69,7 @@ class GeneticAlgorithm:
             else:
                 min_evaluation = min(self._pool.get_evaluations())
                 best_chromosome = cp.copy(self._pool.get_best_chromosome())
+                chromosomes.write(self.generate_chromosome_info(best_chromosome))
                 print(
                     "Better chromosome found at generation {0} with score {1}".format(
                         generation_number, best_chromosome.get_evaluation()))
@@ -78,6 +85,8 @@ class GeneticAlgorithm:
 
         print("The best chromosome is {0} with score {1} after {2} generations"
               .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number))
+
+        chromosomes.close()
         log.close()
 
 
@@ -97,7 +106,7 @@ class AssignmentsGA(GeneticAlgorithm):
         p_cross = str("Crossover probability: {0}\n".format(self._p_cross))
         p_muta = str("Mutation probability: {0}\n".format(self._p_muta))
         elitism = str("Elitism enabled: {0}\n".format(self._elitism))
-        max_gen = str("Msximum generations: {0}\n".format(self._max_gen))
+        max_gen = str("Maximum generations: {0}\n".format(self._max_gen))
         max_change = str("Maximum generations without change: {0}\n".format(self._max_change))
         w_loads = str("Loads coeficient: {0}\n".format(self._w_loads))
         w_dist = str("Distances coeficient: {0}\n".format(self._w_dist))
@@ -118,10 +127,32 @@ class AssignmentsGA(GeneticAlgorithm):
             starting_pool.add_chromosome(starting_chromosome)
         self._pool = starting_pool
 
+    def generate_chromosome_info(self, chromosome):
+        header = "Chromosome with score {0}\n".format(chromosome.get_evaluation())
+        assigns = chromosome.get_assignments()
+        loads = self.transform_assignments_loads(assigns)
+        distances = self.calculate_distances(assigns)
+
+        def generate_assignment_info(x, y, z):
+            x = str(sorted(x)).strip("[]")
+            y = str(sum(y))
+            z = str(z)
+            return "Assignment: {0}. Load score: {1}. Distance score: {2}".format(x, y, z)
+
+        info_list = list(map(generate_assignment_info, assigns, loads, distances))
+
+        info = ""
+
+        if len(info_list) > 0:
+            for element in info_list:
+                info = info + str(element) + "\n"
+
+        return header + info
+
     def evaluate(self, chromosome):
         nurse_assignments = chromosome.get_assignments()
         loads = self.calculate_load(nurse_assignments)
-        distance = self.calculate_distances(nurse_assignments)
+        distance = sum(self.calculate_distances(nurse_assignments))
 
         evaluation = (self._w_loads * loads) + (self._w_dist * distance)
         return evaluation
@@ -148,7 +179,7 @@ class AssignmentsGA(GeneticAlgorithm):
         nurse_distances = []
         for assign in assignments:
             nurse_distances.append(self.get_pst(assign))
-        return sum(nurse_distances)
+        return nurse_distances
 
     def get_pst(self, assign):
 
