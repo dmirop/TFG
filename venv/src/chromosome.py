@@ -21,6 +21,7 @@ class Chromosome:
         self._gene_sequence = gene_sequence
 
     def mutate(self):
+        previous_gene_seq = [*self._gene_sequence]
         mutation_points = sample(range(len(self._gene_sequence)), 2)
 
         mutated_gene_a = self._gene_sequence[mutation_points[0]]
@@ -29,12 +30,17 @@ class Chromosome:
         self._gene_sequence[mutation_points[0]] = mutated_gene_b
         self._gene_sequence[mutation_points[1]] = mutated_gene_a
 
+        if sorted(self._gene_sequence) != sorted(previous_gene_seq):
+            raise BaseException("The mutation has produced a non valid chromosome")
+
     def simple_crossover(self, other, c_point=None, c_type=None):
         if c_point is None:
             c_point = randrange(len(self._gene_sequence))
 
         if c_type is None:
             c_type = choice(["start", "end"])
+
+        previous_gene_seq = [*self._gene_sequence]
 
         start_self = self._gene_sequence[:c_point]
         end_self = self._gene_sequence[c_point:]
@@ -52,6 +58,8 @@ class Chromosome:
             list(map(assign_gene, conflict_index, missing_genes))
 
             self.set_gene_sequence([*start_self, *end_other])
+            if sorted(self._gene_sequence) != sorted(previous_gene_seq):
+                raise BaseException("The simple start crossover has produced a non valid chromosome")
 
         elif c_type == "end":
             missing_genes = [gene for gene in start_self if gene not in start_other]
@@ -63,6 +71,8 @@ class Chromosome:
             list(map(assign_gene, conflict_index, missing_genes))
 
             self.set_gene_sequence([*start_other, *end_self])
+            if sorted(self._gene_sequence) != sorted(previous_gene_seq):
+                raise BaseException("The simple end crossover has produced a non valid chromosome")
 
         else:
             raise AttributeError("Not a valid crossover type: {0}".format(c_type))
@@ -79,6 +89,8 @@ class Chromosome:
 
         if crossover_type is None:
             crossover_type = choice(["middle", "borders"])
+
+        previous_gene_seq = [*self._gene_sequence]
 
         start_parent_a = self._gene_sequence[:crossover_points[0]]
         middle_parent_a = self._gene_sequence[crossover_points[0]:crossover_points[1]]
@@ -103,6 +115,8 @@ class Chromosome:
             list(map(assign_gene, conflict_index, missing_genes))
 
             self.set_gene_sequence([*start_parent_a, *middle_parent_b, *end_parent_a])
+            if sorted(self._gene_sequence) != sorted(previous_gene_seq):
+                raise BaseException("The double borders crossover has produced a non valid chromosome")
 
         else:
             missing_genes = [gene for gene in borders_parent_a if gene not in borders_parent_b]
@@ -116,6 +130,8 @@ class Chromosome:
 
             self.set_gene_sequence([*borders_parent_b[:crossover_points[0]], *middle_parent_a,
                                     *borders_parent_b[crossover_points[0]:]])
+            if sorted(self._gene_sequence) != sorted(previous_gene_seq):
+                raise BaseException("The double middle crossover has produced a non valid chromosome")
 
 
 class AssignmentChromosome(Chromosome):

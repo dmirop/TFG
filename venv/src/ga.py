@@ -41,7 +41,7 @@ class GeneticAlgorithm:
         min_evaluation = best_chromosome.get_evaluation()
         log = open(self.create_file_name(), "w")
         log.write("MIN, MAX, SUM, MEAN, MEDIAN\n")
-        log.write(str(self._pool.get_stats()).strip("()")+"\n")
+        log.write(str(self._pool.get_stats()).strip("()") + "\n")
 
         while (generation_number < self._max_gen) and (generations_no_changes < self._max_change):
             self.select_and_reproduce()
@@ -56,7 +56,7 @@ class GeneticAlgorithm:
                 generations_no_changes = 0
             generation_number += 1
 
-            log.write(str(self._pool.get_stats()).strip("()")+"\n")
+            log.write(str(self._pool.get_stats()).strip("()") + "\n")
 
             if generation_number % 100 == 0:
                 stats = self._pool.get_stats()
@@ -80,7 +80,7 @@ class AssignmentsGA(GeneticAlgorithm):
         self._w_dist = w_dist
 
     def create_file_name(self):
-        readable = time.ctime(time.time())
+        readable = (str(time.ctime(time.time()))).replace(":", "_")
         return readable + "_" + str(self._p_cross) + "_" + str(self._p_muta) + "_" + str(self._pool_size) \
                + "_" + str(self._max_gen) + "_" + str(self._max_change) + "_" + str(self._w_dist) + "_" \
                + str(self._w_loads) + ".txt"
@@ -94,9 +94,9 @@ class AssignmentsGA(GeneticAlgorithm):
         sum_evaluations = sum(evaluations)
         enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
 
-        reproduce_p = [self._p_cross, 1-self._p_cross]
+        reproduce_p = [self._p_cross, 1 - self._p_cross]
 
-        mutate_p = [self._p_muta, 1-self._p_muta]
+        mutate_p = [self._p_muta, 1 - self._p_muta]
 
         candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size - 1)
 
