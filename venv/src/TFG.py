@@ -19,11 +19,12 @@ def check_arguments():
             assert sys.argv[1] == "--help"
             print("Usage: TFG ROOMS PATIENTS")
             print("Executes a genetic algorithm taking into account the ROOMS and PATIENTS")
-            exit(1)
+            exit(0)
         return True
     except AssertionError:
         print("error: the number of arguments is not correct \n")
         print("Try 'TFG --help' for more information")
+        exit(1)
 
 
 def retrieve_rooms():
@@ -96,7 +97,7 @@ def main():
 
         retrieve_patients()
 
-    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, endogamy=False, pool_size=500)
+    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, endogamy=False, pool_size=500, w_loads=0)
     best_chromosome = genetic_algorithm.run()
 
 
