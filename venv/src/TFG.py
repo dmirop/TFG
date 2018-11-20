@@ -63,7 +63,7 @@ def manhattan_distance(point_a, point_b):
     :param point_b: coordinates of point B
     :return: the Manhattan distance
     """
-    return abs(point_a[0] - point_a[0]) + abs(point_a[1] - point_b[1])
+    return abs(point_a[0] - point_b[0]) + abs(point_a[1] - point_b[1])
 
 
 def retrieve_patients():
@@ -96,8 +96,8 @@ def main():
 
         retrieve_patients()
 
-    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients)
-    genetic_algorithm.run()
+    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, endogamy=False, pool_size=500)
+    best_chromosome = genetic_algorithm.run()
 
 
 if __name__ == "__main__":

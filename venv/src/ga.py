@@ -15,14 +15,16 @@ def create_file_name():
 
 
 class GeneticAlgorithm:
-    def __init__(self, pool_size=50, p_cross=0.8, p_muta=0.05, elitism=True, max_gen=3000, max_change=1500):
+    def __init__(self, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True, endogamy=True, max_gen=5000, max_change=1500):
         self._pool = pool.Pool()
         self._pool_size = pool_size
         self._p_cross = p_cross
         self._p_muta = p_muta
+        self._elitism = elitism
+        self._endogamy = endogamy
         self._max_gen = max_gen
         self._max_change = max_change
-        self._elitism = elitism
+
 
     def get_parameters(self):
         raise NotImplementedError
@@ -40,7 +42,7 @@ class GeneticAlgorithm:
         raise NotImplementedError
 
     def run(self):
-
+        start = time.time()
         base_file_name = create_file_name()
 
         parameters = open(base_file_name + "_param", "w")
@@ -82,18 +84,19 @@ class GeneticAlgorithm:
                 stats = self._pool.get_stats()
                 print("Generation {0}: {1} min score, {2} max score, {3} sum score, {4} mean score, {5} median score"
                       .format(generation_number, stats[0], stats[1], stats[2], stats[3], stats[4]))
-
-        print("The best chromosome is {0} with score {1} after {2} generations"
-              .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number))
+        end = time.time()
+        print("The best chromosome is {0} with score {1} after {2} generations in {3} seconds"
+              .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number, round(end-start)))
 
         chromosomes.close()
         log.close()
+        return best_chromosome
 
 
 class AssignmentsGA(GeneticAlgorithm):
-    def __init__(self, rooms, distance_matrix, patients, pool_size=50, p_cross=0.8, p_muta=0.05, elitism=True,
-                 max_gen=3000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
-        super().__init__(pool_size, p_cross, p_muta, elitism, max_gen, max_change)
+    def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
+                 endogamy=True, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
+        super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
         self._rooms = rooms
         self._distance_matrix = distance_matrix
         self._patients = patients
@@ -106,11 +109,12 @@ class AssignmentsGA(GeneticAlgorithm):
         p_cross = str("Crossover probability: {0}\n".format(self._p_cross))
         p_muta = str("Mutation probability: {0}\n".format(self._p_muta))
         elitism = str("Elitism enabled: {0}\n".format(self._elitism))
+        endogamy = str("Endogamy enabled: {0}\n".format(self._endogamy))
         max_gen = str("Maximum generations: {0}\n".format(self._max_gen))
         max_change = str("Maximum generations without change: {0}\n".format(self._max_change))
         w_loads = str("Loads coeficient: {0}\n".format(self._w_loads))
         w_dist = str("Distances coeficient: {0}\n".format(self._w_dist))
-        return pool_size + p_cross + p_muta + elitism + max_gen + max_change + w_loads + w_dist
+        return pool_size + p_cross + p_muta + elitism + endogamy + max_gen + max_change + w_loads + w_dist
 
     def initialize(self):
         base_population = [i for i in range(len(self._patients))]
@@ -230,13 +234,24 @@ class AssignmentsGA(GeneticAlgorithm):
             candidate = cp.copy(candidate)
             reproduce = choices(["cross", "no_change"], weights=reproduce_p)
             if reproduce[0] == "cross":
+                if not self._endogamy:
+                    parent = cp.copy(choices(self._pool.get_pool_list(), weights=enter_p, k=1)[0])
                 crossover_type = choice(["ordered", "simple", "double"])
                 if crossover_type == "ordered":
-                    candidate.ordered_crossover(best_chromosome)
+                    if self._endogamy:
+                        candidate.ordered_crossover(best_chromosome)
+                    else:
+                        candidate.ordered_crossover(parent)
                 elif crossover_type == "simple":
-                    candidate.simple_crossover(best_chromosome)
+                    if self._endogamy:
+                        candidate.simple_crossover(best_chromosome)
+                    else:
+                        candidate.simple_crossover(parent)
                 elif crossover_type == "double":
-                    candidate.double_crossover(best_chromosome)
+                    if self._endogamy:
+                        candidate.double_crossover(best_chromosome)
+                    else:
+                        candidate.double_crossover(parent)
             elif reproduce[0] == "no_change":
                 pass
 
