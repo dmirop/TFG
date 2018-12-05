@@ -217,7 +217,9 @@ class AssignmentsGA(GeneticAlgorithm):
         evaluations = self._pool.get_evaluations()
         converting_factor = max(evaluations) + min(evaluations)
         sum_evaluations = sum(evaluations)
-        enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
+        
+        if sum_evaluations != 0:
+            enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
 
         reproduce_p = [self._p_cross, 1 - self._p_cross]
 
