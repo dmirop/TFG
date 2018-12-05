@@ -215,11 +215,13 @@ class AssignmentsGA(GeneticAlgorithm):
         best_chromosome = cp.copy(self._pool.get_best_chromosome())
 
         evaluations = self._pool.get_evaluations()
-        converting_factor = max(evaluations) + min(evaluations)
         sum_evaluations = sum(evaluations)
-        
-        if sum_evaluations != 0:
+
+        if sum_evaluations == 0:
+            converting_factor = max(evaluations) + min(evaluations)
             enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
+        else:
+            enter_p = evaluations
 
         reproduce_p = [self._p_cross, 1 - self._p_cross]
 
