@@ -72,7 +72,8 @@ class Chromosome:
 
             self.set_gene_sequence([*start_other, *end_self])
             if sorted(self._gene_sequence) != sorted(previous_gene_seq):
-                raise BaseException("The simple end crossover has produced a non valid chromosome")
+                raise BaseException("The simple end crossover has produced a non valid chromosome: {0} from {1}"
+                                    .format(self._gene_sequence, previous_gene_seq))
 
         else:
             raise AttributeError("Not a valid crossover type: {0}".format(c_type))
@@ -116,7 +117,8 @@ class Chromosome:
 
             self.set_gene_sequence([*start_parent_a, *middle_parent_b, *end_parent_a])
             if sorted(self._gene_sequence) != sorted(previous_gene_seq):
-                raise BaseException("The double borders crossover has produced a non valid chromosome")
+                raise BaseException("The double borders crossover has produced a non valid chromosome: {0} from {1}"
+                                    .format(self._gene_sequence, previous_gene_seq))
 
         else:
             missing_genes = [gene for gene in borders_parent_a if gene not in borders_parent_b]
@@ -131,7 +133,8 @@ class Chromosome:
             self.set_gene_sequence([*borders_parent_b[:crossover_points[0]], *middle_parent_a,
                                     *borders_parent_b[crossover_points[0]:]])
             if sorted(self._gene_sequence) != sorted(previous_gene_seq):
-                raise BaseException("The double middle crossover has produced a non valid chromosome")
+                raise BaseException("The double middle crossover has produced a non valid chromosome: {0}"
+                                    .format(self._gene_sequence))
 
     def print(self):
         return "Chromosome with score {0}\n".format(self.get_evaluation())
@@ -166,4 +169,3 @@ class AssignmentChromosome(Chromosome):
 
     def get_nurse_indices(self):
         return [i for i, x in enumerate(self._gene_sequence) if x < 0]
-

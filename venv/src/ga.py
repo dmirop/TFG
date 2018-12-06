@@ -39,7 +39,61 @@ class GeneticAlgorithm:
         raise NotImplementedError
 
     def select_and_reproduce(self):
-        raise NotImplementedError
+        best_chromosome = cp.copy(self._pool.get_best_chromosome())
+
+        evaluations = self._pool.get_evaluations()
+        sum_evaluations = sum(evaluations)
+
+        if sum_evaluations > 0:
+            converting_factor = max(evaluations) + min(evaluations)
+            enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
+        else:
+            enter_p = evaluations
+
+        reproduce_p = [self._p_cross, 1 - self._p_cross]
+
+        mutate_p = [self._p_muta, 1 - self._p_muta]
+
+        if self._elitism:
+            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size - 1)
+        else:
+            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size)
+
+        new_pool = pool.Pool()
+
+        for candidate in candidates_list:
+            candidate = cp.copy(candidate)
+            reproduce = choices(["cross", "no_change"], weights=reproduce_p)
+            if reproduce[0] == "cross":
+                if not self._endogamy:
+                    parent = cp.copy(choices(self._pool.get_pool_list(), weights=enter_p, k=1)[0])
+                crossover_type = choice(["simple", "double"])
+                if crossover_type == "simple":
+                    if self._endogamy:
+                        candidate.simple_crossover(best_chromosome)
+                    else:
+                        candidate.simple_crossover(parent)
+                elif crossover_type == "double":
+                    if self._endogamy:
+                        candidate.double_crossover(best_chromosome)
+                    else:
+                        candidate.double_crossover(parent)
+            elif reproduce[0] == "no_change":
+                pass
+
+            mutate = choices(["muta", "no_change"], weights=mutate_p)
+            if mutate[0] == "muta":
+                candidate.mutate()
+            elif mutate[0] == "no_change":
+                pass
+
+            candidate.set_evaluation(self.evaluate(candidate))
+            new_pool.add_chromosome(candidate)
+
+        if self._elitism:
+            new_pool.add_chromosome(best_chromosome)
+
+        self._pool = new_pool
 
     def run(self):
         start = time.time()
@@ -96,7 +150,7 @@ class GeneticAlgorithm:
 
 class AssignmentsGA(GeneticAlgorithm):
     def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
-                 endogamy=True, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
+                 endogamy=True, max_gen=5, max_change=1, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
         self._rooms = rooms
         self._distance_matrix = distance_matrix
@@ -218,7 +272,7 @@ class AssignmentsGA(GeneticAlgorithm):
         evaluations = self._pool.get_evaluations()
         sum_evaluations = sum(evaluations)
 
-        if sum_evaluations == 0:
+        if sum_evaluations > 0:
             converting_factor = max(evaluations) + min(evaluations)
             enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
         else:
@@ -274,3 +328,45 @@ class AssignmentsGA(GeneticAlgorithm):
 
         self._pool = new_pool
 
+
+class UbicationGA(GeneticAlgorithm):
+    def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
+                 endogamy=True, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
+        super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
+        self._rooms = rooms
+        self._distance_matrix = distance_matrix
+        self._patients = patients
+        self._nurses = nurses
+        self._w_loads = w_loads
+        self._w_dist = w_dist
+
+    def get_parameters(self):
+        pool_size = str("Pool size: {0}\n".format(self._pool_size))
+        p_cross = str("Crossover probability: {0}\n".format(self._p_cross))
+        p_muta = str("Mutation probability: {0}\n".format(self._p_muta))
+        elitism = str("Elitism enabled: {0}\n".format(self._elitism))
+        endogamy = str("Endogamy enabled: {0}\n".format(self._endogamy))
+        max_gen = str("Maximum generations: {0}\n".format(self._max_gen))
+        max_change = str("Maximum generations without change: {0}\n".format(self._max_change))
+        w_loads = str("Loads coeficient: {0}\n".format(self._w_loads))
+        w_dist = str("Distances coeficient: {0}\n".format(self._w_dist))
+        return pool_size + p_cross + p_muta + elitism + endogamy + max_gen + max_change + w_loads + w_dist
+
+    def initialize(self):
+        starting_pool = pool.Pool()
+
+        for population in range(self._pool_size):
+            gene_sequence = sample(self._patients, len(self._patients))
+            starting_chromosome = chroms.Chromosome(gene_sequence)
+            starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
+            starting_pool.add_chromosome(starting_chromosome)
+
+        self._pool = starting_pool
+
+    def generate_chromosome_info(self, chromosome):
+        header = "Chromosome with score {0}\n".format(chromosome.get_evaluation())
+        return header
+
+    def evaluate(self, chromosome):
+        assignment_chromosome = AssignmentsGA(self._rooms, self._distance_matrix, self._patients).run()
+        return assignment_chromosome.get_evaluation()
