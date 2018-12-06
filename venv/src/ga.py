@@ -60,6 +60,7 @@ class GeneticAlgorithm:
         generations_no_changes = 0
 
         best_chromosome = cp.copy(self._pool.get_best_chromosome())
+        chromosomes.write(self.generate_chromosome_info(best_chromosome))
         min_evaluation = best_chromosome.get_evaluation()
 
         log.write(str(self._pool.get_stats()).strip("()") + "\n")
