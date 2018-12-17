@@ -8,6 +8,10 @@ class Pool:
         self._enter_p = None
 
     def add_chromosome(self, chromosome):
+        """
+        Method to add a new chromosome to the pool
+        :param chromosome: chromosome to add
+        """
         self._pool_list.append(chromosome)
         if self._best_chromosome is None:
             self._best_chromosome = chromosome
@@ -27,6 +31,10 @@ class Pool:
         return max([chromosome.get_evaluation() for chromosome in self._pool_list])
 
     def get_stats(self):
+        """
+        Method to retrieve the statistics of the pool
+        :return: a tuple of statistics
+        """
         evaluations = self.get_evaluations()
         return min(evaluations), max(evaluations), sum(evaluations), sum(evaluations)/len(evaluations), \
             sorted(evaluations)[round(len(evaluations)/2)]
@@ -38,6 +46,10 @@ class Pool:
         self._pool_list = pool_list
 
     def calculate_enter_p(self):
+        """
+        Calculates the probability to be chosen for the next generation pool
+        :return: a list with the probabilities
+        """
         evaluations = self.get_evaluations()
         sum_evaluations = sum(evaluations)
 

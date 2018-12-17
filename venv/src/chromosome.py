@@ -21,6 +21,10 @@ class Chromosome:
         self._gene_sequence = gene_sequence
 
     def mutate(self):
+        """
+        Method to mutate a chromosome
+        :return: BaseException if there has been an error
+        """
         previous_gene_seq = [*self._gene_sequence]
         mutation_points = sample(range(len(self._gene_sequence)), 2)
 
@@ -34,6 +38,13 @@ class Chromosome:
             raise BaseException("The mutation has produced a non valid chromosome")
 
     def simple_crossover(self, other, c_point=None, c_type=None):
+        """
+        Method that produces a new child with simple crossover
+        :param other: the partner used for the crossover
+        :param c_point: crossover point
+        :param c_type: type of crossover
+        :return: a new child with new gene sequence
+        """
         if c_point is None:
             c_point = randrange(len(self._gene_sequence))
 
@@ -78,6 +89,13 @@ class Chromosome:
             raise AttributeError("Not a valid crossover type: {0}".format(c_type))
 
     def double_crossover(self, other, crossover_points=None, crossover_type=None):
+        """
+        Method that produces a new child with double crossover
+        :param other: the partner used for the crossover
+        :param c_point: crossover points
+        :param c_type: type of crossover
+        :return: a new child with new gene sequence
+        """
         if crossover_points is None:
             crossover_points = []
 
@@ -138,7 +156,15 @@ class Chromosome:
 
 
 class AssignmentChromosome(Chromosome):
+    """
+    Class to define an assignment Chromosome
+    """
     def ordered_crossover(self, other):
+        """
+        Creates a new child with ordered crossover
+        :param other: the other parent that participates
+        :return: a new child with new gene sequence
+        """
         nurse_index = self.get_nurse_indices()
 
         part_keep = choice(range(len(nurse_index)))
@@ -152,6 +178,10 @@ class AssignmentChromosome(Chromosome):
                                           nurse_index[part_keep] + 1], "middle")
 
     def get_assignments(self):
+        """
+        Method to retrieve the nurse assignments
+        :return: a list of assignments
+        """
         assigns = []
         nurse_assign = []
         for gene in self._gene_sequence:
