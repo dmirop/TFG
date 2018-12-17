@@ -10,12 +10,21 @@ import time
 
 
 def create_file_name():
+    """
+    Creates a string to identify de file name
+    :return: a string that contains the full date
+    """
     readable = (str(time.ctime(time.time()))).replace(":", "_")
     return readable
 
 
 class GeneticAlgorithm:
-    def __init__(self, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True, endogamy=True, max_gen=5000, max_change=1500):
+    """
+    Defines a generic Genetic Algorithm
+    """
+
+    def __init__(self, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True, endogamy=True, max_gen=5000,
+                 max_change=1500):
         self._pool = pool.Pool()
         self._pool_size = pool_size
         self._p_cross = p_cross
@@ -24,7 +33,6 @@ class GeneticAlgorithm:
         self._endogamy = endogamy
         self._max_gen = max_gen
         self._max_change = max_change
-
 
     def get_parameters(self):
         raise NotImplementedError
@@ -87,7 +95,7 @@ class GeneticAlgorithm:
                       .format(generation_number, stats[0], stats[1], stats[2], stats[3], stats[4]))
         end = time.time()
         print("The best chromosome is {0} with score {1} after {2} generations in {3} seconds"
-              .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number, round(end-start)))
+              .format(best_chromosome.get_gene_sequence(), min_evaluation, generation_number, round(end - start)))
 
         chromosomes.close()
         log.close()
@@ -95,6 +103,10 @@ class GeneticAlgorithm:
 
 
 class AssignmentsGA(GeneticAlgorithm):
+    """
+    Defines a Genetic Algorithm to assign nurses to patients
+    """
+
     def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
                  endogamy=True, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
@@ -104,8 +116,14 @@ class AssignmentsGA(GeneticAlgorithm):
         self._nurses = nurses
         self._w_loads = w_loads
         self._w_dist = w_dist
+        self._reproduce_p = [self._p_cross, 1 - self._p_cross]
+        self._mutate_p = [self._p_muta, 1 - self._p_muta]
 
     def get_parameters(self):
+        """
+        Retrieves the values of different parameters from the genetic algorithm
+        :return: a string with all the required information
+        """
         pool_size = str("Pool size: {0}\n".format(self._pool_size))
         p_cross = str("Crossover probability: {0}\n".format(self._p_cross))
         p_muta = str("Mutation probability: {0}\n".format(self._p_muta))
@@ -118,6 +136,10 @@ class AssignmentsGA(GeneticAlgorithm):
         return pool_size + p_cross + p_muta + elitism + endogamy + max_gen + max_change + w_loads + w_dist
 
     def initialize(self):
+        """
+        Creates the first pool to evaluate
+        :return: a random pool of chromosmes
+        """
         base_population = [i for i in range(len(self._patients))]
 
         for nurse in range(-1, -self._nurses, -1):
@@ -130,9 +152,17 @@ class AssignmentsGA(GeneticAlgorithm):
             starting_chromosome = chroms.AssignmentChromosome(gene_sequence)
             starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
             starting_pool.add_chromosome(starting_chromosome)
+
+        starting_pool.calculate_enter_p()
+
         self._pool = starting_pool
 
     def generate_chromosome_info(self, chromosome):
+        """
+        Generates the information about a chromosome so it's readable
+        :param chromosome: the crhomosome that needs its information polled
+        :return: a string that contains the fitting score as well as the assignments
+        """
         header = "Chromosome with score {0}\n".format(chromosome.get_evaluation())
         assigns = chromosome.get_assignments()
         loads = self.transform_assignments_loads(assigns)
@@ -155,6 +185,11 @@ class AssignmentsGA(GeneticAlgorithm):
         return header + info
 
     def evaluate(self, chromosome):
+        """
+        Evaluates a chromosome taking into account the fitting function
+        :param chromosome: chromosome to be evaluated
+        :return: the value of the fitting function for that chromosome
+        """
         nurse_assignments = chromosome.get_assignments()
         loads = self.calculate_load(nurse_assignments)
         distance = sum(self.calculate_distances(nurse_assignments))
@@ -163,30 +198,40 @@ class AssignmentsGA(GeneticAlgorithm):
         return evaluation
 
     def calculate_load(self, assignments):
+        """
+        Calculates the load of care from the different assignments of patients
+        :param assignments: sets of assignments
+        :return: the standard variance of the cost of cares
+        """
 
         loads = self.transform_assignments_loads(assignments)
-
         loads = [sum(load) for load in loads]
-
         mean = sum(loads) / len(loads)
-
         sq_differences = [(x - mean) ** 2 for x in loads]
-
         variance = sum(sq_differences) / len(sq_differences)
 
         return sqrt(variance)
 
     def transform_assignments_loads(self, assignments):
-
         return [[int(self._patients[index]) for index in assign] for assign in assignments]
 
     def calculate_distances(self, assignments):
+        """
+        Calculates the total distance that all nurses will need to connect all patients
+        :param assignments: sets of patient assignments to nurses
+        :return: the sum of the vaule of the minimal trees
+        """
         nurse_distances = []
         for assign in assignments:
             nurse_distances.append(self.get_pst(assign))
         return nurse_distances
 
     def get_pst(self, assign):
+        """
+        Calculates the cost of the primordial tree
+        :param assign: an assignment of patients for a nurse
+        :return: the minimal cost of the tree that joins all patients
+        """
 
         if len(assign) != 0:
             included_nodes = {}
@@ -212,65 +257,49 @@ class AssignmentsGA(GeneticAlgorithm):
             return 0
 
     def select_and_reproduce(self):
-
-        best_chromosome = cp.copy(self._pool.get_best_chromosome())
-
-        evaluations = self._pool.get_evaluations()
-        sum_evaluations = sum(evaluations)
-
-        if sum_evaluations > 0:
-            converting_factor = max(evaluations) + min(evaluations)
-            enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
-        else:
-            enter_p = evaluations
-
-        reproduce_p = [self._p_cross, 1 - self._p_cross]
-
-        mutate_p = [self._p_muta, 1 - self._p_muta]
+        """
+        Creates a new pool of children chromosome from the actual pool
+        :return: A new pool with child chromosomes
+        """
 
         if self._elitism:
-            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size - 1)
+            candidates_list = choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(),
+                                      k=self._pool_size - 1)
         else:
-            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size)
+            candidates_list = choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(), k=self._pool_size)
 
         new_pool = pool.Pool()
 
         for candidate in candidates_list:
-            candidate = cp.copy(candidate)
-            reproduce = choices(["cross", "no_change"], weights=reproduce_p)
+            parent = cp.copy(candidate)
+            reproduce = choices(["cross", "no_change"], weights=self._reproduce_p)
             if reproduce[0] == "cross":
                 if not self._endogamy:
-                    parent = cp.copy(choices(self._pool.get_pool_list(), weights=enter_p, k=1)[0])
+                    partner = cp.copy(choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(), k=1)[0])
+                else:
+                    partner = self._pool.get_best_chromosome()
                 crossover_type = choice(["ordered", "simple", "double"])
                 if crossover_type == "ordered":
-                    if self._endogamy:
-                        candidate.ordered_crossover(best_chromosome)
-                    else:
-                        candidate.ordered_crossover(parent)
+                    parent.ordered_crossover(partner)
                 elif crossover_type == "simple":
-                    if self._endogamy:
-                        candidate.simple_crossover(best_chromosome)
-                    else:
-                        candidate.simple_crossover(parent)
+                    parent.simple_crossover(partner)
                 elif crossover_type == "double":
-                    if self._endogamy:
-                        candidate.double_crossover(best_chromosome)
-                    else:
-                        candidate.double_crossover(parent)
+                    parent.double_crossover(partner)
             elif reproduce[0] == "no_change":
                 pass
 
-            mutate = choices(["muta", "no_change"], weights=mutate_p)
+            mutate = choices(["muta", "no_change"], weights=self._mutate_p)
             if mutate[0] == "muta":
-                candidate.mutate()
+                parent.mutate()
             elif mutate[0] == "no_change":
                 pass
 
-            candidate.set_evaluation(self.evaluate(candidate))
-            new_pool.add_chromosome(candidate)
+            parent.set_evaluation(self.evaluate(candidate))
+            new_pool.add_chromosome(parent)
 
         if self._elitism:
-            new_pool.add_chromosome(best_chromosome)
+            new_pool.add_chromosome(cp.copy(self._pool.get_best_chromosome()))
+
+        new_pool.calculate_enter_p()
 
         self._pool = new_pool
-

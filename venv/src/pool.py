@@ -5,6 +5,7 @@ class Pool:
     def __init__(self):
         self._pool_list = []
         self._best_chromosome = None
+        self._enter_p = None
 
     def add_chromosome(self, chromosome):
         self._pool_list.append(chromosome)
@@ -35,3 +36,17 @@ class Pool:
 
     def set_pool(self, pool_list):
         self._pool_list = pool_list
+
+    def calculate_enter_p(self):
+        evaluations = self.get_evaluations()
+        sum_evaluations = sum(evaluations)
+
+        if sum_evaluations > 0:
+            converting_factor = max(evaluations) + min(evaluations)
+            self._enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
+        else:
+            self._enter_p = evaluations
+
+    def get_enter_p(self):
+        return self._enter_p
+
