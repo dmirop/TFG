@@ -39,61 +39,7 @@ class GeneticAlgorithm:
         raise NotImplementedError
 
     def select_and_reproduce(self):
-        best_chromosome = cp.copy(self._pool.get_best_chromosome())
-
-        evaluations = self._pool.get_evaluations()
-        sum_evaluations = sum(evaluations)
-
-        if sum_evaluations > 0:
-            converting_factor = max(evaluations) + min(evaluations)
-            enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
-        else:
-            enter_p = evaluations
-
-        reproduce_p = [self._p_cross, 1 - self._p_cross]
-
-        mutate_p = [self._p_muta, 1 - self._p_muta]
-
-        if self._elitism:
-            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size - 1)
-        else:
-            candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size)
-
-        new_pool = pool.Pool()
-
-        for candidate in candidates_list:
-            candidate = cp.copy(candidate)
-            reproduce = choices(["cross", "no_change"], weights=reproduce_p)
-            if reproduce[0] == "cross":
-                if not self._endogamy:
-                    parent = cp.copy(choices(self._pool.get_pool_list(), weights=enter_p, k=1)[0])
-                crossover_type = choice(["simple", "double"])
-                if crossover_type == "simple":
-                    if self._endogamy:
-                        candidate.simple_crossover(best_chromosome)
-                    else:
-                        candidate.simple_crossover(parent)
-                elif crossover_type == "double":
-                    if self._endogamy:
-                        candidate.double_crossover(best_chromosome)
-                    else:
-                        candidate.double_crossover(parent)
-            elif reproduce[0] == "no_change":
-                pass
-
-            mutate = choices(["muta", "no_change"], weights=mutate_p)
-            if mutate[0] == "muta":
-                candidate.mutate()
-            elif mutate[0] == "no_change":
-                pass
-
-            candidate.set_evaluation(self.evaluate(candidate))
-            new_pool.add_chromosome(candidate)
-
-        if self._elitism:
-            new_pool.add_chromosome(best_chromosome)
-
-        self._pool = new_pool
+        raise NotImplementedError
 
     def run(self):
         start = time.time()
@@ -355,11 +301,17 @@ class UbicationGA(GeneticAlgorithm):
     def initialize(self):
         starting_pool = pool.Pool()
 
-        for population in range(self._pool_size):
-            gene_sequence = sample(range(len(self._patients)), len(self._patients))
-            starting_chromosome = chroms.Chromosome(gene_sequence)
+        starting_gene_sequence = [i for i in range(len(self._patients))]
+
+        for population in range(self._pool_size-1):
+            starting_chromosome = chroms.Chromosome(starting_gene_sequence)
+            starting_chromosome.mutate()
             starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
             starting_pool.add_chromosome(starting_chromosome)
+
+        starting_chromosome = chroms.Chromosome(starting_gene_sequence)
+        starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
+        starting_pool.add_chromosome(starting_chromosome)
 
         self._pool = starting_pool
 
@@ -375,3 +327,26 @@ class UbicationGA(GeneticAlgorithm):
     def map_loads(self, gene_sequence):
         loads = [self._patients[index] for index in gene_sequence]
         return loads
+
+    def select_and_reproduce(self):
+        best_chromosome = cp.copy(self._pool.get_best_chromosome())
+
+        evaluations = self._pool.get_evaluations()
+        sum_evaluations = sum(evaluations)
+
+        if sum_evaluations > 0:
+            converting_factor = max(evaluations) + min(evaluations)
+            enter_p = [round((converting_factor - evaluation) / sum_evaluations, 4) for evaluation in evaluations]
+        else:
+            enter_p = evaluations
+
+        candidates_list = choices(self._pool.get_pool_list(), weights=enter_p, k=self._pool_size)
+
+        new_pool = pool.Pool()
+
+        for candidate in candidates_list:
+            candidate.mutate()
+            candidate.set_evaluation(self.evaluate(candidate))
+            new_pool.add_chromosome(candidate)
+
+        self._pool = new_pool
