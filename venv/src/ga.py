@@ -321,7 +321,8 @@ class UbicationGA(GeneticAlgorithm):
 
     def evaluate(self, chromosome):
         new_patient_list = self.map_loads(chromosome.get_gene_sequence())
-        assignment_chromosome = AssignmentsGA(self._rooms, self._distance_matrix, new_patient_list).run()
+        assignment_chromosome = AssignmentsGA(self._rooms, self._distance_matrix, new_patient_list,
+                                              nurses=self._nurses).run()
         return assignment_chromosome.get_evaluation()
 
     def map_loads(self, gene_sequence):
