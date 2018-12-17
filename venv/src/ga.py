@@ -25,7 +25,6 @@ class GeneticAlgorithm:
         self._max_gen = max_gen
         self._max_change = max_change
 
-
     def get_parameters(self):
         raise NotImplementedError
 
