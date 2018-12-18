@@ -68,7 +68,7 @@ class AssignmentsGA(GeneticAlgorithm):
         self._w_dist = w_dist
         self._reproduce_p = [self._p_cross, 1 - self._p_cross]
         self._mutate_p = [self._p_muta, 1 - self._p_muta]
-        self._verbose = False;
+        self._verbose = True
 
     def get_parameters(self):
         """
@@ -339,13 +339,20 @@ class UbicationGA(GeneticAlgorithm):
         Creates the first pool of chromosomes
         :return: a pool with chromosomes with a swapping of patients
         """
+        processing_pool = mp.Pool(processes=mp.cpu_count())
+
+        initial_chromosome_list = [chroms.Chromosome([i for i in range(len(self._patients))])
+                                   for individual in range(len(self._patients)-1)]
+
+        starting_chromosome_list = processing_pool.map(self.mutate_cromosome, [c for c in initial_chromosome_list])
+
+        processing_pool.close()
+        processing_pool.join()
+
         starting_pool = pool.Pool()
 
-        for population in range(self._pool_size-1):
-            starting_chromosome = chroms.Chromosome([i for i in range(len(self._patients))])
-            starting_chromosome.mutate()
-            starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
-            starting_pool.add_chromosome(starting_chromosome)
+        for chromosome in starting_chromosome_list:
+            starting_pool.add_chromosome(chromosome)
 
         starting_chromosome = chroms.Chromosome([i for i in range(len(self._patients))])
         starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
@@ -354,6 +361,11 @@ class UbicationGA(GeneticAlgorithm):
         starting_pool.calculate_enter_p()
 
         self._pool = starting_pool
+
+    def mutate_cromosome(self, chromosome):
+        chromosome.mutate()
+        chromosome.set_evaluation(self.evaluate(chromosome))
+        return chromosome
 
     def generate_chromosome_info(self, chromosome):
         header = "Chromosome with score {0}\n".format(chromosome.get_evaluation())
@@ -385,11 +397,21 @@ class UbicationGA(GeneticAlgorithm):
 
         new_pool = pool.Pool()
 
+        new_list = []
+
         for candidate in candidates_list:
             parent = cp.copy(candidate)
-            parent.mutate()
-            parent.set_evaluation(self.evaluate(parent))
-            new_pool.add_chromosome(parent)
+            new_list.append(parent)
+
+        processing_pool = mp.Pool(processes=mp.cpu_count())
+
+        processing_pool.map(self.mutate_cromosome, [c for c in new_list])
+
+        processing_pool.close()
+        processing_pool.join()
+
+        for child in new_list:
+            new_pool.add_chromosome(child)
 
         new_pool.calculate_enter_p()
 
