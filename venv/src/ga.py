@@ -7,6 +7,7 @@ from math import sqrt
 import heapq
 import copy as cp
 import time
+import multiprocessing as mp
 
 
 def create_file_name():
@@ -343,15 +344,11 @@ class UbicationGA(GeneticAlgorithm):
         for population in range(self._pool_size-1):
             starting_chromosome = chroms.Chromosome([i for i in range(len(self._patients))])
             starting_chromosome.mutate()
-            print("First generation chromosome: {0}".format(starting_chromosome.get_gene_sequence()))
             starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
-            print("Fitting: {0}".format(starting_chromosome.get_evaluation()))
             starting_pool.add_chromosome(starting_chromosome)
 
         starting_chromosome = chroms.Chromosome([i for i in range(len(self._patients))])
-        print("First generation chromosome (raw): {0}".format(starting_chromosome.get_gene_sequence()))
         starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
-        print("Fitting: {0}".format(starting_chromosome.get_evaluation()))
         starting_pool.add_chromosome(starting_chromosome)
 
         starting_pool.calculate_enter_p()
@@ -390,13 +387,10 @@ class UbicationGA(GeneticAlgorithm):
 
         for candidate in candidates_list:
             parent = cp.copy(candidate)
-            print("Premutation: {0}".format(parent.get_gene_sequence()))
             parent.mutate()
-            print("Postmutation: {0}".format(parent.get_gene_sequence()))
             parent.set_evaluation(self.evaluate(parent))
-            print("Fitting: {0}".format(parent.get_evaluation()))
             new_pool.add_chromosome(parent)
-        print("Finished reproduction")
+
         new_pool.calculate_enter_p()
 
         self._pool = new_pool
