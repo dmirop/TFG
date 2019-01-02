@@ -199,3 +199,19 @@ class AssignmentChromosome(Chromosome):
 
     def get_nurse_indices(self):
         return [i for i, x in enumerate(self._gene_sequence) if x < 0]
+
+
+class UbicationChromosome(Chromosome):
+    """
+    Class do define an Ubication Chromosome
+    """
+
+    def __init__(self, gene_sequence):
+        self._assignmentChromosome = None
+        super().__init__(gene_sequence)
+
+    def set_assignment_chromosome(self, assignment_chromosome):
+        self._assignmentChromosome = assignment_chromosome
+
+    def get_assignment_chromosome(self):
+        return self._assignmentChromosome

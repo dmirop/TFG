@@ -68,7 +68,7 @@ class AssignmentsGA(GeneticAlgorithm):
         self._w_dist = w_dist
         self._reproduce_p = [self._p_cross, 1 - self._p_cross]
         self._mutate_p = [self._p_muta, 1 - self._p_muta]
-        self._verbose = True
+        self._verbose = False
 
     def get_parameters(self):
         """
@@ -339,9 +339,12 @@ class UbicationGA(GeneticAlgorithm):
         Creates the first pool of chromosomes
         :return: a pool with chromosomes with a swapping of patients
         """
+
+        starting_pool = pool.Pool()
+
         processing_pool = mp.Pool(processes=mp.cpu_count())
 
-        initial_chromosome_list = [chroms.Chromosome([i for i in range(len(self._patients))])
+        initial_chromosome_list = [chroms.UbicationChromosome([i for i in range(len(self._patients))])
                                    for individual in range(len(self._patients)-1)]
 
         starting_chromosome_list = processing_pool.map(self.mutate_cromosome, [c for c in initial_chromosome_list])
@@ -349,14 +352,8 @@ class UbicationGA(GeneticAlgorithm):
         processing_pool.close()
         processing_pool.join()
 
-        starting_pool = pool.Pool()
-
         for chromosome in starting_chromosome_list:
             starting_pool.add_chromosome(chromosome)
-
-        starting_chromosome = chroms.Chromosome([i for i in range(len(self._patients))])
-        starting_chromosome.set_evaluation(self.evaluate(starting_chromosome))
-        starting_pool.add_chromosome(starting_chromosome)
 
         starting_pool.calculate_enter_p()
 
