@@ -97,7 +97,7 @@ def main():
 
         retrieve_patients()
 
-    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, pool_size=5, nurses=4, endogamy=False)
+    genetic_algorithm = ga.AssignmentsGA(rooms, distances, patients, pool_size=100, nurses=2)
     best_chromosome = genetic_algorithm.run()
 
 

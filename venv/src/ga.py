@@ -294,7 +294,7 @@ class AssignmentsGA(GeneticAlgorithm):
             elif mutate[0] == "no_change":
                 pass
 
-            parent.set_evaluation(self.evaluate(candidate))
+            parent.set_evaluation(self.evaluate(parent))
             new_pool.add_chromosome(parent)
 
         if self._elitism:
