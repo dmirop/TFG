@@ -206,7 +206,7 @@ class AssignmentsGA(GeneticAlgorithm):
 
         loads = self.transform_assignments_loads(assignments)
         loads_sum = [sum(load) for load in loads]
-        mean = sum(loads_sum) / len(loads)
+        mean = sum(loads_sum) / len(loads_sum)
         sq_differences = [(x - mean) ** 2 for x in loads_sum]
         variance = sum(sq_differences) / len(sq_differences)
 
