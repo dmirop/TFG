@@ -99,6 +99,7 @@ def main():
 
     genetic_algorithm = ga.UbicationGA(rooms, distances, patients, pool_size=10, nurses=2, max_gen=5, max_change=2)
     best_chromosome = genetic_algorithm.run()
+    print(best_chromosome.get_assignment_chromosome().get_gene_sequence())
 
 
 if __name__ == "__main__":

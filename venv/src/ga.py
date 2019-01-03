@@ -57,8 +57,8 @@ class AssignmentsGA(GeneticAlgorithm):
     Defines a Genetic Algorithm to assign nurses to patients
     """
 
-    def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
-                 endogamy=True, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
+    def __init__(self, rooms, distance_matrix, patients, pool_size=500, p_cross=0.8, p_muta=0.05, elitism=True,
+                 endogamy=False, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
         self._rooms = rooms
         self._distance_matrix = distance_matrix
@@ -361,7 +361,9 @@ class UbicationGA(GeneticAlgorithm):
 
     def mutate_cromosome(self, chromosome):
         chromosome.mutate()
-        chromosome.set_evaluation(self.evaluate(chromosome))
+        assignment_chromosome = self.evaluate(chromosome)
+        chromosome.set_assignment_chromosome(assignment_chromosome)
+        chromosome.set_evaluation(assignment_chromosome.get_evaluation())
         return chromosome
 
     def generate_chromosome_info(self, chromosome):
@@ -371,14 +373,14 @@ class UbicationGA(GeneticAlgorithm):
 
     def evaluate(self, chromosome):
         """
-        Calculates the fitting value for a chromosome
+        Calculates the best Assignment Chromosome for an ubication Chromosome
         :param chromosome: the patient distribution from where to calculate its value
         :return: the value of the chromosome
         """
         new_patient_list = self.map_loads(chromosome.get_gene_sequence())
         assignment_chromosome = AssignmentsGA(self._rooms, self._distance_matrix, new_patient_list,
                                               nurses=self._nurses).run()
-        return assignment_chromosome.get_evaluation()
+        return assignment_chromosome
 
     def map_loads(self, gene_sequence):
         loads = [self._patients[index] for index in gene_sequence]

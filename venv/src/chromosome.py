@@ -214,4 +214,8 @@ class UbicationChromosome(Chromosome):
         self._assignmentChromosome = assignment_chromosome
 
     def get_assignment_chromosome(self):
+        """
+        Method to retrieve the assignment Chromosome associated to this Ubication Chromosome
+        :return: an assignment Chromosome with the best assignment for this Ubication Chromosome
+        """
         return self._assignmentChromosome
