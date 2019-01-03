@@ -68,7 +68,7 @@ class AssignmentsGA(GeneticAlgorithm):
         self._w_dist = w_dist
         self._reproduce_p = [self._p_cross, 1 - self._p_cross]
         self._mutate_p = [self._p_muta, 1 - self._p_muta]
-        self._verbose = False
+        self._verbose = True
 
     def get_parameters(self):
         """
@@ -355,6 +355,11 @@ class UbicationGA(GeneticAlgorithm):
         for chromosome in starting_chromosome_list:
             starting_pool.add_chromosome(chromosome)
 
+        starting_chromosome = chroms.UbicationChromosome([i for i in range(len(self._patients))])
+        assignment_chromosome = self.evaluate(starting_chromosome)
+        starting_chromosome.set_assignment_chromosome(assignment_chromosome)
+        starting_pool.add_chromosome(starting_chromosome)
+
         starting_pool.calculate_enter_p()
 
         self._pool = starting_pool
@@ -363,7 +368,6 @@ class UbicationGA(GeneticAlgorithm):
         chromosome.mutate()
         assignment_chromosome = self.evaluate(chromosome)
         chromosome.set_assignment_chromosome(assignment_chromosome)
-        chromosome.set_evaluation(assignment_chromosome.get_evaluation())
         return chromosome
 
     def generate_chromosome_info(self, chromosome):
@@ -391,8 +395,10 @@ class UbicationGA(GeneticAlgorithm):
         Creates a new pool of child chromosomes
         :return: a new pool from where to keep calculating
         """
-
-        candidates_list = choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(), k=self._pool_size)
+        if self._elitism:
+            candidates_list = choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(), k=self._pool_size - 1)
+        else:
+            candidates_list = choices(self._pool.get_pool_list(), weights=self._pool.get_enter_p(), k=self._pool_size)
 
         new_pool = pool.Pool()
 
@@ -411,6 +417,9 @@ class UbicationGA(GeneticAlgorithm):
 
         for child in new_list:
             new_pool.add_chromosome(child)
+
+        if self._elitism:
+            new_pool.add_chromosome(cp.copy(self._pool.get_best_chromosome()))
 
         new_pool.calculate_enter_p()
 

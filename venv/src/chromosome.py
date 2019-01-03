@@ -212,6 +212,7 @@ class UbicationChromosome(Chromosome):
 
     def set_assignment_chromosome(self, assignment_chromosome):
         self._assignmentChromosome = assignment_chromosome
+        self._evaluation = assignment_chromosome.get_evaluation()
 
     def get_assignment_chromosome(self):
         """
