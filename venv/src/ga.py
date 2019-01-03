@@ -57,7 +57,7 @@ class AssignmentsGA(GeneticAlgorithm):
     Defines a Genetic Algorithm to assign nurses to patients
     """
 
-    def __init__(self, rooms, distance_matrix, patients, pool_size=500, p_cross=0.8, p_muta=0.05, elitism=True,
+    def __init__(self, rooms, distance_matrix, patients, pool_size=100, p_cross=0.8, p_muta=0.05, elitism=True,
                  endogamy=False, max_gen=5000, max_change=1500, nurses=4, w_loads=1, w_dist=1):
         super().__init__(pool_size, p_cross, p_muta, elitism, endogamy, max_gen, max_change)
         self._rooms = rooms
